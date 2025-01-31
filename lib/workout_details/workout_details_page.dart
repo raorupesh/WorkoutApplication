@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../models/workout_model.dart'; // Import the workout model to get the Workout and ExerciseResult classes
+import '../models/workout_model.dart';
+import '../widgets/recent_performance_widget.dart'; // Import the workout model to get the Workout and ExerciseResult classes
 
 class WorkoutDetailsPage extends StatelessWidget {
   final Workout workout;
@@ -23,6 +24,14 @@ class WorkoutDetailsPage extends StatelessWidget {
             subtitle: Text('Output: ${exercise.output} ${exercise.type}'),
           );
         },
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Container(
+          width: double.infinity,
+          height: 80,
+          child: RecentPerformanceWidget(),
+        ),
       ),
     );
   }

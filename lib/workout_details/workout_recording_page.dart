@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:workoutpage/widgets/time_input_Widget.dart';
+import 'package:workoutpage/widgets/time_input_widget.dart';
 
 import '../main.dart';
 import '../models/workout_model.dart';
 import '../widgets/exercise_helper.dart';
 import '../widgets/meters_input_widget.dart';
-import '../widgets/numeric_widget.dart';
+import '../widgets/numeric_input_widget.dart';
 import '../widgets/recent_performance_widget.dart';
 
 class WorkoutRecordingPage extends StatefulWidget {
