@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../models/workout_model.dart';
 import '../widgets/recent_performance_widget.dart'; // Import the workout model to get the Workout and ExerciseResult classes
 
@@ -15,20 +14,27 @@ class WorkoutDetailsPage extends StatelessWidget {
       appBar: AppBar(
         title: Text('Workout Details'),
       ),
-      body: ListView.builder(
+      body: workout.exercises.isEmpty
+          ? Center(child: Text('No exercises completed'))
+          : ListView.builder(
         itemCount: workout.exercises.length,
         itemBuilder: (context, index) {
           final exercise = workout.exercises[index];
+          final exerciseResult = workout.exerciseResults.length > index
+              ? workout.exerciseResults[index]
+              : null; // Safe check in case exerciseResults is shorter than exercises
+
           return ListTile(
             title: Text(exercise.name),
-            //subtitle: Text('Achieved Output: ${exercise.achievedOutput} ${exercise.type}'),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                    'Target: ${workout.exercises[index].targetOutput} ${exercise.type}'),
-                Text(
-                    'Achieved: ${workout.exerciseResults[index].achievedOutput} ${exercise.type}'),
+                    'Target: ${exercise.targetOutput} ${exercise.type}'),
+                exerciseResult != null
+                    ? Text(
+                    'Achieved: ${exerciseResult.achievedOutput} ${exercise.type}')
+                    : Text('No result available'),
               ],
             ),
           );

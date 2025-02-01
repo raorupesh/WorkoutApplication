@@ -17,17 +17,21 @@ class RecentPerformanceWidget extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.all(5.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'No workout done.',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            ],
+          child: Center( // Center the Column in the middle of the Card
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center, // Center content vertically in Column
+              children: [
+                Text(
+                  'No workout done.',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ],
+            ),
           ),
         ),
       );
+
     }
 
     // Get the date for today and 7 days ago

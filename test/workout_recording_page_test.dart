@@ -11,58 +11,58 @@ import 'package:workoutpage/workout_details/workout_recording_page.dart'; // Ass
 void main() {
   group('WorkoutRecordingPage Tests', () {
     testWidgets('Shows input fields for each exercise in the workout plan',
-        (WidgetTester tester) async {
-      // Set up mock workout data with exercises
-      final mockWorkoutProvider = WorkoutProvider();
-      final now = DateTime.now();
-      mockWorkoutProvider.addWorkout(Workout(
-        date: now.toString(),
-        exerciseResults: [
-          ExerciseResult('Push-ups', 'Reps', 10),
-          ExerciseResult('Running', 'Meters', 100),
-          ExerciseResult('Plank', 'Seconds', 10),
-          ExerciseResult('Squats', 'Reps', 10),
-          ExerciseResult('Cycling', 'Meters', 100),
-          ExerciseResult('Cardio', 'Seconds', 10),
-          ExerciseResult('Bicep Curls', 'Reps', 10),
-        ],
-        exercises: [
-          Exercise('Push-ups', 'Reps', 10),
-          Exercise('Running', 'Meters', 100),
-          Exercise('Plank', 'Seconds', 10),
-          Exercise('Squats', 'Reps', 10),
-          Exercise('Cycling', 'Meters', 100),
-          Exercise('Cardio', 'Seconds', 10),
-          Exercise('Bicep Curls', 'Reps', 10),
-        ],
-      ));
+            (WidgetTester tester) async {
+          // Set up mock workout data with exercises
+          final mockWorkoutProvider = WorkoutProvider();
+          final now = DateTime.now();
+          mockWorkoutProvider.addWorkout(Workout(
+            date: now.toString(),
+            exerciseResults: [
+              ExerciseResult('Push-ups', 'Reps', 10),
+              ExerciseResult('Running', 'Meters', 100),
+              ExerciseResult('Plank', 'Seconds', 10),
+              ExerciseResult('Squats', 'Reps', 10),
+              ExerciseResult('Cycling', 'Meters', 100),
+              ExerciseResult('Cardio', 'Seconds', 10),
+              ExerciseResult('Bicep Curls', 'Reps', 10),
+            ],
+            exercises: [
+              Exercise('Push-ups', 'Reps', 10),
+              Exercise('Running', 'Meters', 100),
+              Exercise('Plank', 'Seconds', 10),
+              Exercise('Squats', 'Reps', 10),
+              Exercise('Cycling', 'Meters', 100),
+              Exercise('Cardio', 'Seconds', 10),
+              Exercise('Bicep Curls', 'Reps', 10),
+            ],
+          ));
 
-      // Render the page with the mock provider
-      await tester.pumpWidget(
-        MaterialApp(
-          home: ChangeNotifierProvider<WorkoutProvider>.value(
-            value: mockWorkoutProvider,
-            child: Scaffold(
-              body:
+          // Render the page with the mock provider
+          await tester.pumpWidget(
+            MaterialApp(
+              home: ChangeNotifierProvider<WorkoutProvider>.value(
+                value: mockWorkoutProvider,
+                child: Scaffold(
+                  body:
                   WorkoutRecordingPage(), // The page containing the input fields for exercises
+                ),
+              ),
             ),
-          ),
-        ),
-      );
+          );
 
-      // Wait for the widget to build and settle
-      await tester.pumpAndSettle();
+          // Wait for the widget to build and settle
+          await tester.pumpAndSettle();
 
-      // Check for the exercise names to ensure they are displayed
-      expect(find.text('Push-ups'), findsOneWidget);
-      expect(find.text('Running'), findsOneWidget);
-      expect(find.text('Plank'), findsOneWidget);
-      expect(find.text('Squats'), findsOneWidget);
+          // Check for the exercise names to ensure they are displayed
+          expect(find.text('Push-ups'), findsOneWidget);
+          expect(find.text('Running'), findsOneWidget);
+          expect(find.text('Plank'), findsOneWidget);
+          expect(find.text('Squats'), findsOneWidget);
 
-      // Check for the input widgets
-      expect(find.byType(NumericInputWidget), findsNWidgets(2));
-      expect(find.byType(MetersInputWidget), findsNWidgets(1));
-      expect(find.byType(TimeInputWidget), findsNWidgets(1));
-    });
+          // Check for the input widgets
+          expect(find.byType(NumericInputWidget), findsNWidgets(2));
+          expect(find.byType(MetersInputWidget), findsNWidgets(1));
+          expect(find.byType(TimeInputWidget), findsNWidgets(1));
+        });
   });
 }
