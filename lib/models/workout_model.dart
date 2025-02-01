@@ -1,25 +1,24 @@
 class Workout {
   final String date; // Date when the workout was recorded
-  final List<ExerciseResult> exercises;
+  final List<Exercise> exercises;
+  final List<ExerciseResult> exerciseResults;
 
-  Workout({
-    required this.date,
-    required this.exercises,
-  });
+  Workout({required this.date,
+    required this.exercises, required this.exerciseResults,});
 }
 
 class Exercise {
   final String name;
-  final String type; // 'seconds', 'reps', 'meters'
+  final String type;
+  final int targetOutput; // 'seconds', 'reps', 'meters'
 
-  Exercise(this.name, this.type);
+  Exercise(this.name, this.type, this.targetOutput);
 }
 
 class ExerciseResult {
   final String name;
   final String type;
-  final int
-      output; // The value entered by the user (e.g., seconds, reps, meters)
+  final int achievedOutput; // The value entered by the user (e.g., seconds, reps, meters)
 
-  ExerciseResult(this.name, this.type, this.output);
+  ExerciseResult(this.name, this.type, this.achievedOutput);
 }

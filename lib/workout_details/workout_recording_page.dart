@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:workoutpage/widgets/meters_input_widget.dart';
+import 'package:workoutpage/widgets/numeric_input_widget.dart';
+import 'package:workoutpage/widgets/recent_performance_widget.dart';
 import 'package:workoutpage/widgets/time_input_widget.dart';
 
 import '../main.dart';
 import '../models/workout_model.dart';
-import '../widgets/exercise_helper.dart';
-import '../widgets/meters_input_widget.dart';
-import '../widgets/numeric_input_widget.dart';
-import '../widgets/recent_performance_widget.dart';
 
 class WorkoutRecordingPage extends StatefulWidget {
   @override
@@ -16,34 +15,40 @@ class WorkoutRecordingPage extends StatefulWidget {
 
 class _WorkoutRecordingPageState extends State<WorkoutRecordingPage> {
   final List<Exercise> exercises = [
-    Exercise('Push-ups', 'Reps'),
-    Exercise('Running', 'Meters'),
-    Exercise('Plank', 'Seconds'),
-    Exercise('Squats', 'Reps'),
-    Exercise('Cycling', 'Meters'),
-    Exercise('Cardio', 'Seconds'),
-    Exercise('Bicep Curls', 'Reps'),
+    Exercise('Push-ups', 'Reps', 10),
+    Exercise('Running', 'Meters', 100),
+    Exercise('Plank', 'Seconds', 10),
+    Exercise('Squats', 'Reps', 10),
+    Exercise('Cycling', 'Meters', 100),
+    Exercise('Cardio', 'Seconds', 10),
+    Exercise('Bicep Curls', 'Reps', 10),
   ];
 
   final Map<int, int> exerciseOutputs =
       {}; // Map to store inputs for each exercise
 
   void _saveWorkout() {
+    // Generate the ExerciseResult list based on the user's inputs
+    final exerciseResults = exercises.map((exercise) {
+      final achievedOutput = exerciseOutputs[exercises.indexOf(exercise)] ?? 0;
+      return ExerciseResult(
+        exercise.name,
+        exercise.type,
+        achievedOutput,
+      );
+    }).toList();
+
+    // Create the Workout object
     final workout = Workout(
       date: DateTime.now().toString(),
-      exercises: exercises
-          .map((exercise) => ExerciseResult(
-                exercise.name,
-                exercise.type,
-                exerciseOutputs[exercises.indexOf(exercise)] ?? 0,
-              ))
-          .toList(),
+      exerciseResults: exerciseResults,
+      exercises: exercises, // Include the exercises for reference
     );
 
-    // Add workout to shared state using Provider
+    // Add the workout to the shared state using Provider
     Provider.of<WorkoutProvider>(context, listen: false).addWorkout(workout);
 
-    // Navigate back to WorkoutHistoryPage after saving
+    // Navigate back to the WorkoutHistoryPage after saving
     Navigator.pop(context);
   }
 
@@ -57,8 +62,7 @@ class _WorkoutRecordingPageState extends State<WorkoutRecordingPage> {
         itemCount: exercises.length,
         itemBuilder: (context, index) {
           final exercise = exercises[index];
-          final target = getTargetForExercise(
-              exercise.name, exercise.type); // Get the target
+          final target = exercise.targetOutput; // Get the target output
 
           return Padding(
             padding: const EdgeInsets.all(8.0),

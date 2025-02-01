@@ -1,48 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../main.dart';
-import 'exercise_helper.dart'; // Import the helper function
+import 'package:workoutpage/main.dart';
+import 'exercise_helper.dart';
 
 class RecentPerformanceWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final workouts = Provider.of<WorkoutProvider>(context).workouts;
 
-    // Get the date 7 days ago and today
-    DateTime sevenDaysAgo = DateTime.now().subtract(Duration(days: 7));
+    // If no workouts are available, display the updated message "No workout done"
+    if (workouts.isEmpty) {
+      return Card(
+        elevation: 5,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(5.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'No workout done.',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Get the date for today and 7 days ago
     DateTime today = DateTime.now();
+    DateTime sevenDaysAgo = today.subtract(Duration(days: 7));
 
-    // Initialize counters for the overall last 7 days performance
-    int totalExercisesLast7Days = 0,
-        exercisesMeetingTargetLast7Days = 0,
-        totalExercisesToday = 0,
-        exercisesMeetingTargetToday = 0;
+    // Initialize counters for overall (last 7 days) and today’s performance
+    int totalExercisesLast7Days = 0, exercisesMeetingTargetLast7Days = 0;
+    int totalExercisesToday = 0, exercisesMeetingTargetToday = 0;
 
-    // Calculate performance for the last 7 days and today's performance
+    // Loop through all workouts and calculate both overall and daily performance
     for (var workout in workouts) {
       DateTime workoutDate = DateTime.parse(workout.date);
 
-      // Only consider workouts from the last 7 days
+      // Calculate for the last 7 days
       if (workoutDate.isAfter(sevenDaysAgo)) {
-        for (var exerciseResult in workout.exercises) {
-          int target =
-              getTargetForExercise(exerciseResult.name, exerciseResult.type);
+        for (var exerciseResult in workout.exerciseResults) {
+          int target = getTargetForExercise(exerciseResult.name, exerciseResult.type);
 
-          // If it's within the last 7 days
+          // Count for the last 7 days
           totalExercisesLast7Days++;
 
-          // Check if the exercise meets the target for last 7 days
-          if (exerciseResult.output >= target) {
+          // Check if the exercise meets the target in the last 7 days
+          if (exerciseResult.achievedOutput >= target) {
             exercisesMeetingTargetLast7Days++;
           }
 
-          // If it's today
+          // If the workout is today, count for today’s performance
           if (isSameDay(workoutDate, today)) {
             totalExercisesToday++;
 
-            // Check if the exercise meets the target for today
-            if (exerciseResult.output >= target) {
+            // Check if the exercise meets the target today
+            if (exerciseResult.achievedOutput >= target) {
               exercisesMeetingTargetToday++;
             }
           }
@@ -50,39 +68,42 @@ class RecentPerformanceWidget extends StatelessWidget {
       }
     }
 
-    // Calculate the performance score for the past 7 days
-    double performanceScore =
-        (totalExercisesLast7Days > 0 && exercisesMeetingTargetLast7Days > 0)
-            ? (exercisesMeetingTargetLast7Days / totalExercisesLast7Days)
-            : 0;
+    // Calculate the overall performance score for the past 7 days
+    double overallPerformanceScore = 0;
+    if (totalExercisesLast7Days > 0) {
+      overallPerformanceScore = exercisesMeetingTargetLast7Days / totalExercisesLast7Days;
+    }
 
-    // Calculate today's performance score
-    double todaysPerformanceScore =
-        (totalExercisesToday > 0 && exercisesMeetingTargetToday > 0)
-            ? (exercisesMeetingTargetToday / totalExercisesToday)
-            : 0;
+    // Calculate the daily performance score for today
+    double dailyPerformanceScore = 0;
+    if (totalExercisesToday > 0) {
+      dailyPerformanceScore = exercisesMeetingTargetToday / totalExercisesToday;
+    }
 
     // Format the scores to be more user-friendly
-    String displayPerformanceScore =
-        performanceScore > 0 ? performanceScore.toStringAsFixed(2) : '0';
-    String displayTodaysPerformanceScore = todaysPerformanceScore > 0
-        ? todaysPerformanceScore.toStringAsFixed(2)
-        : '0';
+    String displayOverallPerformanceScore = overallPerformanceScore == 0
+        ? '0'
+        : overallPerformanceScore.toStringAsFixed(2);
+    String displayDailyPerformanceScore = dailyPerformanceScore == 0
+        ? '0'
+        : dailyPerformanceScore.toStringAsFixed(2);
 
-    return Card(
-      elevation: 5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(5.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Overall Score: $displayPerformanceScore'),
-            Divider(), // Add a divider to separate the two scores
-            Text('Today\'s Score: $displayTodaysPerformanceScore'),
-          ],
+    return SingleChildScrollView( // Wrap the content in SingleChildScrollView
+      child: Card(
+        elevation: 5,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(5.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Overall Score: $displayOverallPerformanceScore'),
+              Divider(), // Add a divider to separate the two scores
+              Text('Today\'s Score: $displayDailyPerformanceScore'),
+            ],
+          ),
         ),
       ),
     );

@@ -21,7 +21,16 @@ class WorkoutDetailsPage extends StatelessWidget {
           final exercise = workout.exercises[index];
           return ListTile(
             title: Text(exercise.name),
-            subtitle: Text('Output: ${exercise.output} ${exercise.type}'),
+            //subtitle: Text('Achieved Output: ${exercise.achievedOutput} ${exercise.type}'),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                    'Target: ${workout.exercises[index].targetOutput} ${exercise.type}'),
+                Text(
+                    'Achieved: ${workout.exerciseResults[index].achievedOutput} ${exercise.type}'),
+              ],
+            ),
           );
         },
       ),
