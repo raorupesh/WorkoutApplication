@@ -4,7 +4,6 @@ import 'package:workoutpage/widgets/meters_input_widget.dart';
 import 'package:workoutpage/widgets/numeric_input_widget.dart';
 import 'package:workoutpage/widgets/recent_performance_widget.dart';
 import 'package:workoutpage/widgets/time_input_widget.dart';
-
 import '../main.dart';
 import '../models/workout_model.dart';
 
@@ -77,10 +76,12 @@ class _WorkoutRecordingPageState extends State<WorkoutRecordingPage> {
                 // Show the input field based on exercise type (Reps, Seconds, Meters)
                 if (exercise.type == 'Meters')
                   MetersInputWidget(
+                    key: Key('${exercise.name}-input'), // Dynamically set key for the input field
                     onInputChanged: (value) {
                       exerciseOutputs[index] = value;
                     },
                   ),
+
                 if (exercise.type == 'Seconds')
                   TimeInputWidget(
                     onInputChanged: (value) {

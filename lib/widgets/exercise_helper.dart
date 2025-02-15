@@ -1,5 +1,3 @@
-// lib/helpers/exercise_helper.dart
-
 int getTargetForExercise(String exerciseName, String exerciseType) {
   // Define target values based on exercise type or name
   if (exerciseType == 'Reps') {

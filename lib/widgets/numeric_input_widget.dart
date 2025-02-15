@@ -5,12 +5,14 @@ class NumericInputWidget extends StatefulWidget {
   final String label; // 'Seconds', 'Meters', or 'Reps'
   final int initialValue;
   final Function(int) onInputChanged;
+  final Key? key;
 
   NumericInputWidget({
     required this.label,
     required this.initialValue,
     required this.onInputChanged,
-  });
+    this.key,
+  }) : super(key: key);
 
   @override
   _NumericInputWidgetState createState() => _NumericInputWidgetState();

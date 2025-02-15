@@ -3,8 +3,9 @@ import 'package:flutter/services.dart';
 
 class MetersInputWidget extends StatefulWidget {
   final Function(int) onInputChanged;
+  final Key? key; // Optional key
 
-  MetersInputWidget({required this.onInputChanged});
+  MetersInputWidget({required this.onInputChanged, this.key}) : super(key: key);
 
   @override
   _MetersInputWidgetState createState() => _MetersInputWidgetState();

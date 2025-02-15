@@ -24,17 +24,27 @@ class WorkoutDetailsPage extends StatelessWidget {
               ? workout.exerciseResults[index]
               : null; // Safe check in case exerciseResults is shorter than exercises
 
+          bool isCompleted = false;
+          if (exerciseResult != null) {
+            isCompleted = exerciseResult.achievedOutput >= exercise.targetOutput;
+          }
+
           return ListTile(
             title: Text(exercise.name),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                    'Target: ${exercise.targetOutput} ${exercise.type}'),
+                Text('Target: ${exercise.targetOutput} ${exercise.type}'),
                 exerciseResult != null
-                    ? Text(
-                    'Achieved: ${exerciseResult.achievedOutput} ${exercise.type}')
+                    ? Text('Achieved: ${exerciseResult.achievedOutput} ${exercise.type}')
                     : Text('No result available'),
+                Text(
+                  isCompleted ? 'Status: Completed' : 'Status: Incomplete',
+                  style: TextStyle(
+                    color: isCompleted ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           );
