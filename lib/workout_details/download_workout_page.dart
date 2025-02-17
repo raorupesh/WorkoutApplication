@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:html/parser.dart' as htmlParser;
+import 'package:workoutpage/workout_details/workout_history_page.dart';
 import '../models/workout_model.dart';
+import '../main.dart';
 
-// Main Page
 class DownloadWorkoutPage extends StatefulWidget {
   @override
   _DownloadWorkoutPageState createState() => _DownloadWorkoutPageState();
@@ -89,6 +91,23 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
     }
   }
 
+  void _saveWorkout() {
+    if (_workoutPlan != null) {
+      Provider.of<WorkoutProvider>(context, listen: false).addWorkout(_workoutPlan!);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WorkoutHistoryPage(),
+        ),
+      );
+    }
+
+    if (_workoutPlan != null) {
+      Provider.of<WorkoutProvider>(context, listen: false).addWorkout(_workoutPlan!);
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -138,6 +157,7 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                   },
                 ),
               ),
+              ElevatedButton(onPressed: _saveWorkout, child: Text("Save Workout")),
             ],
           ],
         ),

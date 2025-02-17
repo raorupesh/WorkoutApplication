@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:workoutpage/workout_details/workout_details_page.dart';
-import 'package:workoutpage/workout_details/workout_selection_page.dart';
+import '../models/workout_model.dart';
+import 'workout_details_page.dart';
+import 'workout_selection_page.dart';
 import '../main.dart';
 import '../widgets/recent_performance_widget.dart';
 
@@ -14,7 +15,7 @@ class WorkoutHistoryPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Workout History'),
-        centerTitle: true, // Center the title as in your example
+        centerTitle: true,
       ),
       body: Column(
         children: [
@@ -30,92 +31,45 @@ class WorkoutHistoryPage extends StatelessWidget {
             ),
           ),
           SizedBox(height: 10),
-          // Space between text and the list
           Expanded(
-            child: Stack(
-              children: [
-                workouts.isEmpty
-                    ? Center(child: Text('No workouts recorded yet.'))
-                    : ListView.builder(
-                  itemCount: workouts.length,
-                  itemBuilder: (context, index) {
-                    final workout = workouts[index];
+            child: workouts.isEmpty
+                ? Center(child: Text('No workouts recorded yet.'))
+                : ListView.builder(
+              itemCount: workouts.length,
+              itemBuilder: (context, index) {
+                final workout = workouts[index];
+                final completedExercises = workout.exerciseResults.where((result) => result.achievedOutput >= workout.exercises[index].targetOutput).length;
+                final incompleteExercises = workout.exerciseResults.length - completedExercises;
 
-                    // Count completed and incomplete exercises
-                    int completedExercises = workout.exercises
-                        .asMap()
-                        .entries
-                        .where((entry) {
-                      final exercise = entry.value;
-                      final exerciseResult = workout.exerciseResults[entry.key];
-                      return exerciseResult != null && exerciseResult.achievedOutput >= exercise.targetOutput;
-                    })
-                        .length;
-
-                    int incompleteExercises = workout.exercises
-                        .asMap()
-                        .entries
-                        .where((entry) {
-                      final exercise = entry.value;
-                      final exerciseResult = workout.exerciseResults[entry.key];
-                      return exerciseResult == null || exerciseResult.achievedOutput < exercise.targetOutput;
-                    })
-                        .length;
-
-                    return Card(
-                      margin: EdgeInsets.symmetric(vertical: 5),
-                      child: ListTile(
-                        title: Text(
-                          DateFormat('yyyy-MM-dd h:mm a')
-                              .format(DateTime.parse(workout.date)),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Completed: $completedExercises'),
-                            Text('Incomplete: $incompleteExercises'),
-                          ],
-                        ),
-                        trailing: Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 18,
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  WorkoutDetailsPage(workout),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
-                // Recent Performance Widget in bottom-left corner
-                Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Container(
-                      width: 150, // Set the width to make it smaller
-                      height: 90, // Set the height to make it smaller
-                      decoration: BoxDecoration(
-                        color: Colors.teal.shade200,
-                        borderRadius: BorderRadius.circular(12), // Optional: Rounded corners
-                      ),
-                      child: RecentPerformanceWidget(),
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 5),
+                  child: ListTile(
+                    title: Text(
+                      DateFormat('yyyy-MM-dd h:mm a').format(DateTime.parse(workout.date)),
                     ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Completed: $completedExercises'),
+                        Text('Incomplete: $incompleteExercises'),
+                      ],
+                    ),
+                    trailing: Icon(Icons.arrow_forward_rounded, size: 18),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => WorkoutDetailsPage(workout),
+                        ),
+                      );
+                    },
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ],
       ),
-
-      // Floating Action Button to add new workout
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -126,7 +80,7 @@ class WorkoutHistoryPage extends StatelessWidget {
           );
         },
         child: Icon(Icons.add),
-        backgroundColor: Colors.teal, // Set button color
+        backgroundColor: Colors.teal,
       ),
     );
   }

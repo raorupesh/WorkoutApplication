@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'workout_recording_page.dart';
+import 'package:workoutpage/workout_details/standard_workout_recording_page.dart';
 import 'download_workout_page.dart';
 import '../widgets/recent_performance_widget.dart'; // Import the RecentPerformanceWidget
 
@@ -24,7 +24,7 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => WorkoutRecordingPage(),
+                        builder: (context) => StandardWorkoutRecordingPage(),
                       ),
                     );
                   },

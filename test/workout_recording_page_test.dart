@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:workoutpage/main.dart'; // Assuming this is the entry point
+import 'package:workoutpage/main.dart';
 import 'package:workoutpage/models/workout_model.dart';
 import 'package:workoutpage/widgets/meters_input_widget.dart';
 import 'package:workoutpage/widgets/numeric_input_widget.dart';
 import 'package:workoutpage/widgets/time_input_widget.dart';
-import 'package:workoutpage/workout_details/workout_recording_page.dart'; // Assuming the page is here
+import 'package:workoutpage/workout_details/standard_workout_recording_page.dart';
+
 
 void main() {
-  group('WorkoutRecordingPage Tests', () {
+  group('Standard WorkoutRecordingPage Tests', () {
     testWidgets('Shows input fields for each exercise in the workout plan',
             (WidgetTester tester) async {
           // Set up mock workout data with exercises
@@ -45,7 +46,7 @@ void main() {
                 value: mockWorkoutProvider,
                 child: Scaffold(
                   body:
-                  WorkoutRecordingPage(), // The page containing the input fields for exercises
+                  StandardWorkoutRecordingPage(), // The page containing the input fields for exercises
                 ),
               ),
             ),

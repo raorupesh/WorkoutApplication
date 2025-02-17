@@ -7,12 +7,12 @@ import 'package:workoutpage/widgets/time_input_widget.dart';
 import '../main.dart';
 import '../models/workout_model.dart';
 
-class WorkoutRecordingPage extends StatefulWidget {
+class StandardWorkoutRecordingPage extends StatefulWidget {
   @override
   _WorkoutRecordingPageState createState() => _WorkoutRecordingPageState();
 }
 
-class _WorkoutRecordingPageState extends State<WorkoutRecordingPage> {
+class _WorkoutRecordingPageState extends State<StandardWorkoutRecordingPage> {
   final List<Exercise> exercises = [
     Exercise(name: 'Push-ups', targetOutput:  10, type: 'Reps'),
     Exercise(name: 'Planks', targetOutput:  10, type: 'Seconds'),
@@ -24,7 +24,7 @@ class _WorkoutRecordingPageState extends State<WorkoutRecordingPage> {
   ];
 
   final Map<int, int> exerciseOutputs =
-      {}; // Map to store inputs for each exercise
+  {}; // Map to store inputs for each exercise
 
   void _saveWorkout() {
     // Generate the ExerciseResult list based on the user's inputs

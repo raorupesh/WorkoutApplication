@@ -4,12 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:workoutpage/main.dart';
 import 'package:workoutpage/widgets/meters_input_widget.dart';
 import 'package:workoutpage/widgets/numeric_input_widget.dart';
-import 'package:workoutpage/workout_details/download_workout_page.dart';
 import 'package:workoutpage/workout_details/workout_details_page.dart';
-import 'package:workoutpage/models/workout_model.dart'; // Import the models
-import 'package:workoutpage/widgets/recent_performance_widget.dart';
-import 'package:workoutpage/workout_details/workout_recording_page.dart';
-import 'package:workoutpage/workout_details/workout_selection_page.dart'; // Import RecentPerformanceWidget
+import 'package:workoutpage/models/workout_model.dart';
+
 
 void main() {
   group('WorkoutDetailsPage Tests', () {
