@@ -1,6 +1,8 @@
-# Workout Aaplication
+# Workout Application
 
-A new Flutter project.
+Workout Application which lets user downloads workouts from different websites.
+After downloading the workouts, user records the exercises performed and score will be assigned based on how many 
+targets the user has met in the exercises.
 
 ## Getting Started
 
