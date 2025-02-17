@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:workoutpage/workout_details/workout_details_page.dart';
-
+import 'package:workoutpage/workout_details/workout_selection_page.dart';
 import '../main.dart';
-import '../widgets/recent_performance_widget.dart'; // Import recent performance widget
-import 'workout_recording_page.dart'; // Import the WorkoutRecordingPage
+import '../widgets/recent_performance_widget.dart';
 
 class WorkoutHistoryPage extends StatelessWidget {
   @override
@@ -77,7 +76,6 @@ class WorkoutHistoryPage extends StatelessWidget {
                             Text('Incomplete: $incompleteExercises'),
                           ],
                         ),
-
                         trailing: Icon(
                           Icons.arrow_forward_rounded,
                           size: 18,
@@ -123,7 +121,7 @@ class WorkoutHistoryPage extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => WorkoutRecordingPage(),
+              builder: (context) => WorkoutPlanSelectionPage(),
             ),
           );
         },

@@ -42,16 +42,17 @@ void main() {
 
       final now = DateTime.now();
       mockWorkoutProvider.addWorkout(Workout(
+        workoutName: "User Recorded Workout",
         date: now.toString(),
         exerciseResults: [
-          ExerciseResult('Push-ups', 'Reps', 10),
-          ExerciseResult('Running', 'Meters', 100),
-          ExerciseResult('Plank', 'Seconds', 10),
+          ExerciseResult(name: 'Push-ups',type:  'Reps', achievedOutput:  10),
+          ExerciseResult(name: 'Rowing', type: 'Meters', achievedOutput: 100),
+          ExerciseResult(name: 'Plank', type: 'Seconds', achievedOutput: 10),
         ],
         exercises: [
-          Exercise('Push-ups', 'Reps', 10),
-          Exercise('Running', 'Meters', 100),
-          Exercise('Plank', 'Seconds', 10),
+          Exercise(name: 'Push-ups', type: 'Reps', targetOutput:  10),
+          Exercise(name: 'Cycling',type:  'Meters', targetOutput: 100),
+          Exercise(name: 'Plank',type:  'Seconds', targetOutput: 10),
         ],
       ));
 

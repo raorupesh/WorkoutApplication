@@ -16,24 +16,25 @@ void main() {
           final mockWorkoutProvider = WorkoutProvider();
           final now = DateTime.now();
           mockWorkoutProvider.addWorkout(Workout(
+            workoutName: "Your Reocrded Workout",
             date: now.toString(),
             exerciseResults: [
-              ExerciseResult('Push-ups', 'Reps', 10),
-              ExerciseResult('Running', 'Meters', 100),
-              ExerciseResult('Plank', 'Seconds', 10),
-              ExerciseResult('Squats', 'Reps', 10),
-              ExerciseResult('Cycling', 'Meters', 100),
-              ExerciseResult('Cardio', 'Seconds', 10),
-              ExerciseResult('Bicep Curls', 'Reps', 10),
+              ExerciseResult(name: 'Push-ups', type: 'Reps',achievedOutput:  10),
+              ExerciseResult(name: 'Rowing', type: 'Meters',achievedOutput:  100),
+              ExerciseResult(name: 'Planks', type: 'Seconds',achievedOutput:  10),
+              ExerciseResult(name: 'Burpees',type:  'Reps',achievedOutput:  10),
+              ExerciseResult(name: 'Cycling', type: 'Meters',achievedOutput:  100),
+              ExerciseResult(name: 'Cardio', type: 'Seconds',achievedOutput:  10),
+              ExerciseResult(name: 'Hammer Curls', type: 'Reps',achievedOutput:  10),
             ],
             exercises: [
-              Exercise('Push-ups', 'Reps', 10),
-              Exercise('Running', 'Meters', 100),
-              Exercise('Plank', 'Seconds', 10),
-              Exercise('Squats', 'Reps', 10),
-              Exercise('Cycling', 'Meters', 100),
-              Exercise('Cardio', 'Seconds', 10),
-              Exercise('Bicep Curls', 'Reps', 10),
+              Exercise(name: 'Push-ups', type: 'Reps',targetOutput:  10),
+              Exercise(name: 'Rowing', type: 'Meters',targetOutput:  100),
+              Exercise(name: 'Planks', type: 'Seconds', targetOutput: 10),
+              Exercise(name: 'Burpees',type:   'Reps',targetOutput:  10),
+              Exercise(name: 'Cycling', type: 'Meters', targetOutput: 100),
+              Exercise(name: 'Cardio',type:  'Seconds', targetOutput: 10),
+              Exercise(name: 'Hammer Curls',type:  'Reps',targetOutput:  10),
             ],
           ));
 
@@ -55,13 +56,13 @@ void main() {
 
           // Check for the exercise names to ensure they are displayed
           expect(find.text('Push-ups'), findsOneWidget);
-          expect(find.text('Running'), findsOneWidget);
-          expect(find.text('Plank'), findsOneWidget);
-          expect(find.text('Squats'), findsOneWidget);
+          expect(find.text('Rowing'), findsOneWidget);
+          expect(find.text('Planks'), findsOneWidget);
+          expect(find.text('Cycling'), findsOneWidget);
 
           // Check for the input widgets
-          expect(find.byType(NumericInputWidget), findsNWidgets(2));
-          expect(find.byType(MetersInputWidget), findsNWidgets(1));
+          expect(find.byType(NumericInputWidget), findsNWidgets(1));
+          expect(find.byType(MetersInputWidget), findsNWidgets(2));
           expect(find.byType(TimeInputWidget), findsNWidgets(1));
         });
   });

@@ -4,16 +4,20 @@ import 'package:provider/provider.dart';
 import 'package:workoutpage/main.dart';
 import 'package:workoutpage/widgets/meters_input_widget.dart';
 import 'package:workoutpage/widgets/numeric_input_widget.dart';
+import 'package:workoutpage/workout_details/download_workout_page.dart';
 import 'package:workoutpage/workout_details/workout_details_page.dart';
 import 'package:workoutpage/models/workout_model.dart'; // Import the models
+import 'package:workoutpage/widgets/recent_performance_widget.dart';
+import 'package:workoutpage/workout_details/workout_recording_page.dart';
+import 'package:workoutpage/workout_details/workout_selection_page.dart'; // Import RecentPerformanceWidget
 
 void main() {
   group('WorkoutDetailsPage Tests', () {
     testWidgets('should show exercise details and actual output', (WidgetTester tester) async {
       // Prepare a mock workout with exercises and exercise results
-      final exercise = Exercise('Push-up', 'reps', 30);
-      final exerciseResult = ExerciseResult('Push-up', 'reps', 35); // Completed more than target
-      final workout = Workout(date: '2025-02-14 10:00:00', exercises: [exercise], exerciseResults: [exerciseResult]);
+      final exercise = Exercise(name: 'Push-up', type: 'reps', targetOutput: 30);
+      final exerciseResult = ExerciseResult(name: 'Push-up', type: 'reps', achievedOutput: 35); // Completed more than target
+      final workout = Workout(workoutName: "Your Recorded Workout", date: '2025-02-14 10:00:00', exercises: [exercise], exerciseResults: [exerciseResult]);
 
       // Build the widget tree
       await tester.pumpWidget(
@@ -36,8 +40,7 @@ void main() {
     });
   });
 
-  group('Widget Testing', ()
-  {
+  group('Widget Testing', () {
     testWidgets('Numeric input widget should allow user to change reps', (WidgetTester tester) async {
       int selectedReps = 0;
 

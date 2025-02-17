@@ -14,11 +14,13 @@ void main() {
       final mockWorkoutProvider = WorkoutProvider();
       final now = DateTime.now();
       mockWorkoutProvider.addWorkout(Workout(
+        workoutName: "Your Reocrded Workout",
         date: now.toString(),
         exerciseResults: [],
         exercises: [],
       ));
       mockWorkoutProvider.addWorkout(Workout(
+        workoutName: "Your Reocrded Workout",
         date: now.subtract(Duration(days: 1)).toString(),
         exerciseResults: [],
         exercises: [],
