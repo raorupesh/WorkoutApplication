@@ -1,35 +1,52 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:workoutpage/widgets/meters_input_widget.dart';
-import 'package:workoutpage/widgets/numeric_input_widget.dart';
-import 'package:workoutpage/widgets/recent_performance_widget.dart';
-import 'package:workoutpage/widgets/time_input_widget.dart';
+
 import '../main.dart';
 import '../models/workout_model.dart';
+import '../widgets/meters_input_widget.dart';
+import '../widgets/numeric_input_widget.dart';
+import '../widgets/recent_performance_widget.dart';
+import '../widgets/time_input_widget.dart';
 
 class StandardWorkoutRecordingPage extends StatefulWidget {
+  final Workout? workoutPlan; // pass in an optional plan
+
+  StandardWorkoutRecordingPage({Key? key, this.workoutPlan}) : super(key: key);
+
   @override
   _WorkoutRecordingPageState createState() => _WorkoutRecordingPageState();
 }
 
 class _WorkoutRecordingPageState extends State<StandardWorkoutRecordingPage> {
-  final List<Exercise> exercises = [
-    Exercise(name: 'Push-ups', targetOutput:  10, type: 'Reps'),
-    Exercise(name: 'Planks', targetOutput:  10, type: 'Seconds'),
-    Exercise(name: 'Rowing', targetOutput:  10, type: 'Meters'),
-    Exercise(name: 'Cycling', targetOutput:  10, type: 'Meters'),
-    Exercise(name: 'Cardio', targetOutput:  10, type: 'Seconds'),
-    Exercise(name: 'Burpees', targetOutput:  10, type: 'Reps'),
-    Exercise(name: 'Hammer Curls', targetOutput:  10, type: 'Reps'),
+  // Default "standard" exercises:
+  final List<Exercise> _defaultExercises = [
+    Exercise(name: 'Push-ups', targetOutput: 10, type: 'Reps'),
+    Exercise(name: 'Planks', targetOutput: 10, type: 'Seconds'),
+    Exercise(name: 'Rowing', targetOutput: 10, type: 'Meters'),
+    Exercise(name: 'Cycling', targetOutput: 10, type: 'Meters'),
+    Exercise(name: 'Cardio', targetOutput: 10, type: 'Seconds'),
+    Exercise(name: 'Burpees', targetOutput: 10, type: 'Reps'),
+    Exercise(name: 'Hammer Curls', targetOutput: 10, type: 'Reps'),
   ];
 
-  final Map<int, int> exerciseOutputs =
-  {}; // Map to store inputs for each exercise
+  // This will be the exercises we actually use
+  late List<Exercise> exercises;
+  final Map<int, int> exerciseOutputs = {};
 
-  void _saveWorkout() {
+  @override
+  void initState() {
+    super.initState();
+    // If a plan was provided, use that plan’s exercises;
+    // otherwise, use the default
+    exercises = widget.workoutPlan?.exercises ?? _defaultExercises;
+  }
+
+  void _saveWorkout() async {
     // Generate the ExerciseResult list based on the user's inputs
     final exerciseResults = exercises.map((exercise) {
-      final achievedOutput = exerciseOutputs[exercises.indexOf(exercise)] ?? 0;
+      final idx = exercises.indexOf(exercise);
+      final achievedOutput = exerciseOutputs[idx] ?? 0;
       return ExerciseResult(
         name: exercise.name,
         achievedOutput: achievedOutput,
@@ -39,16 +56,16 @@ class _WorkoutRecordingPageState extends State<StandardWorkoutRecordingPage> {
 
     // Create the Workout object
     final workout = Workout(
-      workoutName: "Your Recorded Workout",
-      date: DateTime.now().toString(),
+      workoutName: widget.workoutPlan?.workoutName ?? "Standard Workout",
+      date: DateTime.now().toIso8601String(),
+      exercises: exercises,
       exerciseResults: exerciseResults,
-      exercises: exercises, // Include the exercises for reference
     );
 
-    // Add the workout to the shared state using Provider
-    Provider.of<WorkoutProvider>(context, listen: false).addWorkout(workout);
+    // Persist to DB via provider
+    await Provider.of<WorkoutProvider>(context, listen: false).addWorkout(workout);
 
-    // Navigate back to the WorkoutHistoryPage after saving
+    // Navigate back after saving
     Navigator.pop(context);
   }
 
@@ -62,27 +79,23 @@ class _WorkoutRecordingPageState extends State<StandardWorkoutRecordingPage> {
         itemCount: exercises.length,
         itemBuilder: (context, index) {
           final exercise = exercises[index];
-          final target = exercise.targetOutput; // Get the target output
+          final target = exercise.targetOutput;
 
           return Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Display the exercise name and the target
                 Text(exercise.name, style: TextStyle(fontSize: 18)),
                 Text('Target: $target ${exercise.type}',
                     style: TextStyle(fontSize: 16, color: Colors.grey)),
-
-                // Show the input field based on exercise type (Reps, Seconds, Meters)
                 if (exercise.type == 'Meters')
                   MetersInputWidget(
-                    key: Key('${exercise.name}-input'), // Dynamically set key for the input field
+                    key: Key('${exercise.name}-input'),
                     onInputChanged: (value) {
                       exerciseOutputs[index] = value;
                     },
                   ),
-
                 if (exercise.type == 'Seconds')
                   TimeInputWidget(
                     onInputChanged: (value) {

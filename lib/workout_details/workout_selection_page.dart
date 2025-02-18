@@ -1,31 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:workoutpage/workout_details/standard_workout_recording_page.dart';
 import 'download_workout_page.dart';
-import '../widgets/recent_performance_widget.dart'; // Import the RecentPerformanceWidget
+import '../widgets/recent_performance_widget.dart';
+import '../main.dart';
+import '../models/workout_model.dart';
 
 class WorkoutPlanSelectionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final downloadedPlans = Provider.of<WorkoutProvider>(context).downloadedPlans;
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Choose Workout Plan"),
         centerTitle: true,
       ),
-      body: Stack( // Use Stack to position the widget at the bottom
+      body: Stack(
         children: [
+          // The main column with the existing two buttons + a list of downloaded plans
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Standard Plan Button
+                // Existing Standard Plan
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => StandardWorkoutRecordingPage(),
-                      ),
+                      MaterialPageRoute(builder: (context) => StandardWorkoutRecordingPage()),
                     );
                   },
                   child: Text("Standard Plan"),
@@ -36,14 +39,12 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 20),
-                // Download Workout Plan Button
+                // Existing Download Plan button
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => DownloadWorkoutPage(),
-                      ),
+                      MaterialPageRoute(builder: (context) => DownloadWorkoutPage()),
                     );
                   },
                   child: Text("Download Workout Plan"),
@@ -53,22 +54,57 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
                     textStyle: TextStyle(fontSize: 18),
                   ),
                 ),
+                SizedBox(height: 20),
+                // List of previously downloaded plans
+                Expanded(
+                  child: downloadedPlans.isEmpty
+                      ? Center(
+                    child: Text(
+                      "No downloaded plans yet.",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                      : ListView.builder(
+                    itemCount: downloadedPlans.length,
+                    itemBuilder: (context, index) {
+                      final plan = downloadedPlans[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text(plan.workoutName),
+                          subtitle: Text(
+                              "${plan.exercises.length} exercises in this plan"),
+                          onTap: () {
+                            // Navigate to the same recording page, but pass in the plan
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => StandardWorkoutRecordingPage(
+                                  workoutPlan: plan, // pass the plan
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ],
             ),
           ),
-          // Recent Performance Widget in bottom-left corner
+          // The performance widget in the bottom-left corner
           Align(
             alignment: Alignment.bottomLeft,
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Container(
-                width: 150, // Set the width to make it smaller
-                height: 90, // Set the height to make it smaller
+                width: 150,
+                height: 90,
                 decoration: BoxDecoration(
                   color: Colors.teal.shade200,
-                  borderRadius: BorderRadius.circular(12), // Optional: Rounded corners
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: RecentPerformanceWidget(), // The widget you want to add
+                child: RecentPerformanceWidget(),
               ),
             ),
           ),

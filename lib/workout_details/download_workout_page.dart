@@ -93,20 +93,14 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
 
   void _saveWorkout() {
     if (_workoutPlan != null) {
-      Provider.of<WorkoutProvider>(context, listen: false).addWorkout(_workoutPlan!);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => WorkoutHistoryPage(),
-        ),
-      );
-    }
+      // Instead of adding to the main workouts, we add to the downloaded plans
+      Provider.of<WorkoutProvider>(context, listen: false).addDownloadedPlan(_workoutPlan!);
 
-    if (_workoutPlan != null) {
-      Provider.of<WorkoutProvider>(context, listen: false).addWorkout(_workoutPlan!);
+      // Then navigate back or forward as you wish
       Navigator.pop(context);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

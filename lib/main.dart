@@ -1,25 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'models/workout_model.dart';
+import 'services/database_service.dart';
+import 'workout_details/workout_history_page.dart';
 
-import 'models/workout_model.dart'; // Import workout model
-import 'workout_details/workout_history_page.dart'; // Import the workout history page
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-void main() => runApp(MyApp());
+  // Make sure DB is initialized before runApp
+  final workoutProvider = WorkoutProvider();
+  await workoutProvider.initProvider();
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => WorkoutProvider(),
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => workoutProvider,
       child: MaterialApp(
         title: 'Workout Tracker',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.teal,
           appBarTheme: AppBarTheme(
-            backgroundColor: Colors.teal, // AppBar teal color
+            backgroundColor: Colors.teal,
             titleTextStyle: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w600,
@@ -29,17 +30,38 @@ class MyApp extends StatelessWidget {
         ),
         home: WorkoutHistoryPage(),
       ),
-    );
-  }
+    ),
+  );
 }
 
 class WorkoutProvider with ChangeNotifier {
   List<Workout> _workouts = [];
+  List<Workout> _downloadedPlans = [];
 
+  // Expose them via getters
   List<Workout> get workouts => _workouts;
+  List<Workout> get downloadedPlans => _downloadedPlans;
 
-  void addWorkout(Workout workout) {
+  // This runs once at app startup (see main())
+  Future<void> initProvider() async {
+    _workouts = await DBService.instance.getAllCompletedWorkouts();
+    _downloadedPlans = await DBService.instance.getAllDownloadedPlans();
+    notifyListeners();
+  }
+
+  // Called when user finishes recording a workout
+  Future<void> addWorkout(Workout workout) async {
     _workouts.add(workout);
     notifyListeners();
+    // Persist to DB
+    await DBService.instance.insertCompletedWorkout(workout);
+  }
+
+  // Called to save a new downloaded plan for future usage
+  Future<void> addDownloadedPlan(Workout plan) async {
+    _downloadedPlans.add(plan);
+    notifyListeners();
+    // Persist to DB
+    await DBService.instance.insertDownloadedPlan(plan);
   }
 }
