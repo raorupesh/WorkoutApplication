@@ -7,7 +7,9 @@ import 'exercise_helper.dart';
 class RecentPerformanceWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final workouts = Provider.of<WorkoutProvider>(context).workouts;
+    final provider = Provider.of<WorkoutProvider>(context);
+    final workouts = provider.workouts + provider.downloadedPlans; // Merge both lists
+
 
     // If no workouts are available, display the updated message "No workout done"
     if (workouts.isEmpty) {
@@ -48,25 +50,19 @@ class RecentPerformanceWidget extends StatelessWidget {
     for (var workout in workouts) {
       DateTime workoutDate = DateTime.parse(workout.date);
 
-      // Calculate for the last 7 days
       if (workoutDate.isAfter(sevenDaysAgo)) {
         for (var exerciseResult in workout.exerciseResults) {
-          int target =
-              getTargetForExercise(exerciseResult.name, exerciseResult.type);
+          int target = getTargetForExercise(exerciseResult.name, exerciseResult.type);
 
-          // Count for the last 7 days
           totalExercisesLast7Days++;
 
-          // Check if the exercise meets the target in the last 7 days
           if (exerciseResult.achievedOutput >= target) {
             exercisesMeetingTargetLast7Days++;
           }
 
-          // If the workout is today, count for today’s performance
           if (isSameDay(workoutDate, today)) {
             totalExercisesToday++;
 
-            // Check if the exercise meets the target today
             if (exerciseResult.achievedOutput >= target) {
               exercisesMeetingTargetToday++;
             }
@@ -74,6 +70,7 @@ class RecentPerformanceWidget extends StatelessWidget {
         }
       }
     }
+
 
     // Calculate the overall performance score for the past 7 days
     double overallPerformanceScore = 0;
