@@ -45,14 +45,14 @@ void main() {
         workoutName: "User Recorded Workout",
         date: now.toString(),
         exerciseResults: [
-          ExerciseResult(name: 'Push-ups',type:  'Reps', achievedOutput:  10),
+          ExerciseResult(name: 'Push-ups', type: 'Reps', achievedOutput: 10),
           ExerciseResult(name: 'Rowing', type: 'Meters', achievedOutput: 100),
           ExerciseResult(name: 'Plank', type: 'Seconds', achievedOutput: 10),
         ],
         exercises: [
-          Exercise(name: 'Push-ups', type: 'Reps', targetOutput:  10),
-          Exercise(name: 'Cycling',type:  'Meters', targetOutput: 100),
-          Exercise(name: 'Plank',type:  'Seconds', targetOutput: 10),
+          Exercise(name: 'Push-ups', type: 'Reps', targetOutput: 10),
+          Exercise(name: 'Cycling', type: 'Meters', targetOutput: 100),
+          Exercise(name: 'Plank', type: 'Seconds', targetOutput: 10),
         ],
       ));
 

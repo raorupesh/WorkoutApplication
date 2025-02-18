@@ -7,13 +7,14 @@ class TimeInputWidget extends StatefulWidget {
   final int maxValue;
   final Key? key;
 
-  TimeInputWidget({
-    required this.onInputChanged,
-    this.initialValue = 0,
-    this.minValue = 0,
-    this.maxValue = 300,
-    this.key// Default max value is 5 minutes (300 seconds)
-  }): super(key: key);
+  TimeInputWidget(
+      {required this.onInputChanged,
+      this.initialValue = 0,
+      this.minValue = 0,
+      this.maxValue = 300,
+      this.key // Default max value is 5 minutes (300 seconds)
+      })
+      : super(key: key);
 
   @override
   _TimeSliderWidgetState createState() => _TimeSliderWidgetState();

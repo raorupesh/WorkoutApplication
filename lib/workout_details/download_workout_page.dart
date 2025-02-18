@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
 import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:html/parser.dart' as htmlParser;
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'package:html/parser.dart' as htmlParser;
-import 'package:workoutpage/workout_details/workout_history_page.dart';
-import '../models/workout_model.dart';
+
 import '../main.dart';
+import '../models/workout_model.dart';
 
 class DownloadWorkoutPage extends StatefulWidget {
   @override
@@ -34,10 +35,12 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
         } else if (contentType.contains("text/html")) {
           _extractJsonLinks(response.body, url);
         } else {
-          setState(() => _errorMessage = "Unsupported content type: $contentType");
+          setState(
+              () => _errorMessage = "Unsupported content type: $contentType");
         }
       } else {
-        setState(() => _errorMessage = "Failed to fetch content. Check the URL.");
+        setState(
+            () => _errorMessage = "Failed to fetch content. Check the URL.");
       }
     } catch (e) {
       setState(() => _errorMessage = "Error fetching content: $e");
@@ -71,7 +74,8 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
 
       setState(() {
         _jsonLinks = jsonUrls;
-        _errorMessage = jsonUrls.isEmpty ? "No JSON links found on the page." : null;
+        _errorMessage =
+            jsonUrls.isEmpty ? "No JSON links found on the page." : null;
       });
     } catch (e) {
       setState(() => _errorMessage = "Error parsing HTML: $e");
@@ -84,7 +88,8 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
       if (response.statusCode == 200) {
         _parseWorkoutJson(response.body);
       } else {
-        setState(() => _errorMessage = "Failed to fetch selected workout plan.");
+        setState(
+            () => _errorMessage = "Failed to fetch selected workout plan.");
       }
     } catch (e) {
       setState(() => _errorMessage = "Error fetching workout plan: $e");
@@ -94,13 +99,13 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
   void _saveWorkout() {
     if (_workoutPlan != null) {
       // Instead of adding to the main workouts, we add to the downloaded plans
-      Provider.of<WorkoutProvider>(context, listen: false).addDownloadedPlan(_workoutPlan!);
+      Provider.of<WorkoutProvider>(context, listen: false)
+          .addDownloadedPlan(_workoutPlan!);
 
       // Then navigate back or forward as you wish
       Navigator.pop(context);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -113,17 +118,20 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
           children: [
             TextField(
               controller: _urlController,
-              decoration: InputDecoration(labelText: "Workout Plan URL", border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: "Workout Plan URL", border: OutlineInputBorder()),
             ),
             SizedBox(height: 10),
-            ElevatedButton(onPressed: _fetchContent, child: Text("Download Plan")),
+            ElevatedButton(
+                onPressed: _fetchContent, child: Text("Download Plan")),
             if (_errorMessage != null) ...[
               SizedBox(height: 10),
               Text(_errorMessage!, style: TextStyle(color: Colors.red)),
             ],
             if (_jsonLinks.isNotEmpty) ...[
               SizedBox(height: 20),
-              Text("Select a JSON Workout Plan:", style: TextStyle(fontWeight: FontWeight.bold)),
+              Text("Select a JSON Workout Plan:",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               Expanded(
                 child: ListView.builder(
                   itemCount: _jsonLinks.length,
@@ -131,7 +139,8 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                     return ListTile(
                       title: Text(_jsonLinks[index]),
                       trailing: ElevatedButton(
-                        onPressed: () => _fetchSelectedWorkout(_jsonLinks[index]),
+                        onPressed: () =>
+                            _fetchSelectedWorkout(_jsonLinks[index]),
                         child: Text("Load"),
                       ),
                     );
@@ -141,17 +150,22 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
             ],
             if (_workoutPlan != null) ...[
               SizedBox(height: 20),
-              Text("Workout: ${_workoutPlan!.workoutName}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text("Workout: ${_workoutPlan!.workoutName}",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               Expanded(
                 child: ListView.builder(
                   itemCount: _workoutPlan!.exercises.length,
                   itemBuilder: (context, index) {
                     final exercise = _workoutPlan!.exercises[index];
-                    return ListTile(title: Text(exercise.name), subtitle: Text("Target: ${exercise.targetOutput} ${exercise.type}"));
+                    return ListTile(
+                        title: Text(exercise.name),
+                        subtitle: Text(
+                            "Target: ${exercise.targetOutput} ${exercise.type}"));
                   },
                 ),
               ),
-              ElevatedButton(onPressed: _saveWorkout, child: Text("Save Workout")),
+              ElevatedButton(
+                  onPressed: _saveWorkout, child: Text("Save Workout")),
             ],
           ],
         ),

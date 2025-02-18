@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:workoutpage/main.dart';
+
 import 'exercise_helper.dart';
 
 class RecentPerformanceWidget extends StatelessWidget {
@@ -17,10 +18,12 @@ class RecentPerformanceWidget extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.all(5.0),
-          child: Center( // Center the Column in the middle of the Card
+          child: Center(
+            // Center the Column in the middle of the Card
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center, // Center content vertically in Column
+              mainAxisAlignment: MainAxisAlignment.center,
+              // Center content vertically in Column
               children: [
                 Text(
                   'No workout done.',
@@ -31,7 +34,6 @@ class RecentPerformanceWidget extends StatelessWidget {
           ),
         ),
       );
-
     }
 
     // Get the date for today and 7 days ago
@@ -49,7 +51,8 @@ class RecentPerformanceWidget extends StatelessWidget {
       // Calculate for the last 7 days
       if (workoutDate.isAfter(sevenDaysAgo)) {
         for (var exerciseResult in workout.exerciseResults) {
-          int target = getTargetForExercise(exerciseResult.name, exerciseResult.type);
+          int target =
+              getTargetForExercise(exerciseResult.name, exerciseResult.type);
 
           // Count for the last 7 days
           totalExercisesLast7Days++;
@@ -75,7 +78,8 @@ class RecentPerformanceWidget extends StatelessWidget {
     // Calculate the overall performance score for the past 7 days
     double overallPerformanceScore = 0;
     if (totalExercisesLast7Days > 0) {
-      overallPerformanceScore = exercisesMeetingTargetLast7Days / totalExercisesLast7Days;
+      overallPerformanceScore =
+          exercisesMeetingTargetLast7Days / totalExercisesLast7Days;
     }
 
     // Calculate the daily performance score for today
@@ -92,7 +96,8 @@ class RecentPerformanceWidget extends StatelessWidget {
         ? '0'
         : dailyPerformanceScore.toStringAsFixed(2);
 
-    return SingleChildScrollView( // Wrap the content in SingleChildScrollView
+    return SingleChildScrollView(
+      // Wrap the content in SingleChildScrollView
       child: Card(
         elevation: 5,
         shape: RoundedRectangleBorder(

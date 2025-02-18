@@ -1,16 +1,16 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'package:workoutpage/workout_details/workout_selection_page.dart';
 import '../main.dart';
 import '../models/workout_model.dart';
 import '../widgets/meters_input_widget.dart';
 import '../widgets/numeric_input_widget.dart';
 import '../widgets/recent_performance_widget.dart';
 import '../widgets/time_input_widget.dart';
+import 'workout_history_page.dart';
 
 class StandardWorkoutRecordingPage extends StatefulWidget {
-  final Workout? workoutPlan; // pass in an optional plan
+  final Workout? workoutPlan;
 
   StandardWorkoutRecordingPage({Key? key, this.workoutPlan}) : super(key: key);
 
@@ -19,31 +19,25 @@ class StandardWorkoutRecordingPage extends StatefulWidget {
 }
 
 class _WorkoutRecordingPageState extends State<StandardWorkoutRecordingPage> {
-  // Default "standard" exercises:
-  final List<Exercise> _defaultExercises = [
-    Exercise(name: 'Push-ups', targetOutput: 10, type: 'Reps'),
-    Exercise(name: 'Planks', targetOutput: 10, type: 'Seconds'),
-    Exercise(name: 'Rowing', targetOutput: 10, type: 'Meters'),
-    Exercise(name: 'Cycling', targetOutput: 10, type: 'Meters'),
-    Exercise(name: 'Cardio', targetOutput: 10, type: 'Seconds'),
-    Exercise(name: 'Burpees', targetOutput: 10, type: 'Reps'),
-    Exercise(name: 'Hammer Curls', targetOutput: 10, type: 'Reps'),
-  ];
-
-  // This will be the exercises we actually use
   late List<Exercise> exercises;
   final Map<int, int> exerciseOutputs = {};
 
   @override
   void initState() {
     super.initState();
-    // If a plan was provided, use that plan’s exercises;
-    // otherwise, use the default
-    exercises = widget.workoutPlan?.exercises ?? _defaultExercises;
+    exercises = widget.workoutPlan?.exercises ??
+        [
+          Exercise(name: 'Push-ups', targetOutput: 10, type: 'Reps'),
+          Exercise(name: 'Planks', targetOutput: 10, type: 'Seconds'),
+          Exercise(name: 'Rowing', targetOutput: 10, type: 'Meters'),
+          Exercise(name: 'Cycling', targetOutput: 10, type: 'Meters'),
+          Exercise(name: 'Cardio', targetOutput: 10, type: 'Seconds'),
+          Exercise(name: 'Burpees', targetOutput: 10, type: 'Reps'),
+          Exercise(name: 'Hammer Curls', targetOutput: 10, type: 'Reps'),
+        ];
   }
 
   void _saveWorkout() async {
-    // Generate the ExerciseResult list based on the user's inputs
     final exerciseResults = exercises.map((exercise) {
       final idx = exercises.indexOf(exercise);
       final achievedOutput = exerciseOutputs[idx] ?? 0;
@@ -54,7 +48,6 @@ class _WorkoutRecordingPageState extends State<StandardWorkoutRecordingPage> {
       );
     }).toList();
 
-    // Create the Workout object
     final workout = Workout(
       workoutName: widget.workoutPlan?.workoutName ?? "Standard Workout",
       date: DateTime.now().toIso8601String(),
@@ -62,36 +55,50 @@ class _WorkoutRecordingPageState extends State<StandardWorkoutRecordingPage> {
       exerciseResults: exerciseResults,
     );
 
-    // Persist to DB via provider
-    await Provider.of<WorkoutProvider>(context, listen: false).addWorkout(workout);
+    await Provider.of<WorkoutProvider>(context, listen: false)
+        .addWorkout(workout);
 
-    // Navigate back after saving
-    Navigator.pop(context);
+    // Redirect user to the correct page after saving
+    if (widget.workoutPlan == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => WorkoutHistoryPage()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => WorkoutPlanSelectionPage()),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Record Workout'),
+        title: Text(widget.workoutPlan?.workoutName ?? 'Record Workout'),
       ),
       body: ListView.builder(
         itemCount: exercises.length,
         itemBuilder: (context, index) {
           final exercise = exercises[index];
-          final target = exercise.targetOutput;
 
           return Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(exercise.name, style: TextStyle(fontSize: 18)),
-                Text('Target: $target ${exercise.type}',
-                    style: TextStyle(fontSize: 16, color: Colors.grey)),
+                Text(
+                  exercise.name,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'Target: ${exercise.targetOutput} ${exercise.type}',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+                SizedBox(height: 10),
                 if (exercise.type == 'Meters')
                   MetersInputWidget(
-                    key: Key('${exercise.name}-input'),
                     onInputChanged: (value) {
                       exerciseOutputs[index] = value;
                     },

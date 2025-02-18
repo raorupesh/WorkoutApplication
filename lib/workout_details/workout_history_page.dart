@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../models/workout_model.dart';
-import 'workout_details_page.dart';
-import 'workout_selection_page.dart';
+
 import '../main.dart';
 import '../widgets/recent_performance_widget.dart';
+import 'workout_details_page.dart';
+import 'workout_selection_page.dart';
 
 class WorkoutHistoryPage extends StatelessWidget {
   @override
@@ -35,37 +35,52 @@ class WorkoutHistoryPage extends StatelessWidget {
             child: workouts.isEmpty
                 ? Center(child: Text('No workouts recorded yet.'))
                 : ListView.builder(
-              itemCount: workouts.length,
-              itemBuilder: (context, index) {
-                final workout = workouts[index];
-                final completedExercises = workout.exerciseResults.where((result) => result.achievedOutput >= workout.exercises[index].targetOutput).length;
-                final incompleteExercises = workout.exerciseResults.length - completedExercises;
+                    itemCount: workouts.length,
+                    itemBuilder: (context, index) {
+                      final workout = workouts[index];
+                      final completedExercises = workout.exerciseResults
+                          .where((result) =>
+                              result.achievedOutput >=
+                              workout.exercises[index].targetOutput)
+                          .length;
+                      final incompleteExercises =
+                          workout.exerciseResults.length - completedExercises;
 
-                return Card(
-                  margin: EdgeInsets.symmetric(vertical: 5),
-                  child: ListTile(
-                    title: Text(
-                      DateFormat('yyyy-MM-dd h:mm a').format(DateTime.parse(workout.date)),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Completed: $completedExercises'),
-                        Text('Incomplete: $incompleteExercises'),
-                      ],
-                    ),
-                    trailing: Icon(Icons.arrow_forward_rounded, size: 18),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => WorkoutDetailsPage(workout),
+                      return Card(
+                        margin: EdgeInsets.symmetric(vertical: 5),
+                        child: ListTile(
+                          title: Text(
+                            DateFormat('yyyy-MM-dd h:mm a')
+                                .format(DateTime.parse(workout.date)),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Completed: $completedExercises'),
+                              Text('Incomplete: $incompleteExercises'),
+                            ],
+                          ),
+                          trailing: Icon(Icons.arrow_forward_rounded, size: 18),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    WorkoutDetailsPage(workout),
+                              ),
+                            );
+                          },
                         ),
                       );
                     },
                   ),
-                );
-              },
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Container(
+              width: double.infinity,
+              height: 80,
+              child: RecentPerformanceWidget(),
             ),
           ),
         ],

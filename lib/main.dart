@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'models/workout_model.dart';
 import 'services/database_service.dart';
 import 'workout_details/workout_history_page.dart';
@@ -40,6 +41,7 @@ class WorkoutProvider with ChangeNotifier {
 
   // Expose them via getters
   List<Workout> get workouts => _workouts;
+
   List<Workout> get downloadedPlans => _downloadedPlans;
 
   // This runs once at app startup (see main())

@@ -1,14 +1,18 @@
 import 'dart:convert';
+
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+
 import '../../models/workout_model.dart';
 
 class DBService {
   // Singleton pattern
   DBService._privateConstructor();
+
   static final DBService instance = DBService._privateConstructor();
 
   static Database? _database;
+
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDB();
@@ -52,16 +56,14 @@ class DBService {
     String workoutJson = jsonEncode({
       'workoutName': workout.workoutName,
       'date': workout.date,
-      'exercises': workout.exercises.map((e) => {
-        'name': e.name,
-        'target': e.targetOutput,
-        'unit': e.type
-      }).toList(),
-      'exerciseResults': workout.exerciseResults.map((r) => {
-        'name': r.name,
-        'output': r.achievedOutput,
-        'type': r.type
-      }).toList(),
+      'exercises': workout.exercises
+          .map(
+              (e) => {'name': e.name, 'target': e.targetOutput, 'unit': e.type})
+          .toList(),
+      'exerciseResults': workout.exerciseResults
+          .map((r) =>
+              {'name': r.name, 'output': r.achievedOutput, 'type': r.type})
+          .toList(),
     });
     await db.insert('workouts', {'workoutJson': workoutJson});
   }
@@ -71,7 +73,8 @@ class DBService {
     final db = await database;
     final result = await db.query('workouts');
     List<Workout> workouts = result.map((row) {
-      final Map<String, dynamic> jsonMap = jsonDecode(row['workoutJson'] as String);
+      final Map<String, dynamic> jsonMap =
+          jsonDecode(row['workoutJson'] as String);
       return Workout.fromJson(jsonMap);
     }).toList();
     return workouts;
@@ -83,11 +86,10 @@ class DBService {
     // Convert plan to JSON so we can store it
     String planJson = jsonEncode({
       'name': plan.workoutName,
-      'exercises': plan.exercises.map((e) => {
-        'name': e.name,
-        'target': e.targetOutput,
-        'unit': e.type
-      }).toList()
+      'exercises': plan.exercises
+          .map(
+              (e) => {'name': e.name, 'target': e.targetOutput, 'unit': e.type})
+          .toList()
       // We typically don’t need exerciseResults for a newly downloaded plan
       // because it hasn’t been performed yet. But you could store them if you want.
     });
@@ -98,7 +100,8 @@ class DBService {
     final db = await database;
     final result = await db.query('downloaded_plans');
     return result.map((row) {
-      final Map<String, dynamic> jsonMap = jsonDecode(row['workoutJson'] as String);
+      final Map<String, dynamic> jsonMap =
+          jsonDecode(row['workoutJson'] as String);
       return Workout.fromJson(jsonMap);
     }).toList();
   }
