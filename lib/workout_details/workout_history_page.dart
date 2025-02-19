@@ -11,6 +11,9 @@ class WorkoutHistoryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final workouts = Provider.of<WorkoutProvider>(context).workouts;
 
+    // Sort workouts in descending order (newest first)
+    workouts.sort((a, b) => DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Workout History'),
@@ -34,45 +37,45 @@ class WorkoutHistoryPage extends StatelessWidget {
             child: workouts.isEmpty
                 ? Center(child: Text('No workouts recorded yet.'))
                 : ListView.builder(
-                    itemCount: workouts.length,
-                    itemBuilder: (context, index) {
-                      final workout = workouts[index];
-                      final completedExercises = workout.exerciseResults
-                          .where((result) =>
-                              result.achievedOutput >=
-                              workout.exercises[index].targetOutput)
-                          .length;
-                      final incompleteExercises =
-                          workout.exerciseResults.length - completedExercises;
+              itemCount: workouts.length,
+              itemBuilder: (context, index) {
+                final workout = workouts[index];
+                final completedExercises = workout.exerciseResults
+                    .where((result) =>
+                result.achievedOutput >=
+                    workout.exercises[index].targetOutput)
+                    .length;
+                final incompleteExercises =
+                    workout.exerciseResults.length - completedExercises;
 
-                      return Card(
-                        margin: EdgeInsets.symmetric(vertical: 5),
-                        child: ListTile(
-                          title: Text(
-                            DateFormat('yyyy-MM-dd h:mm a')
-                                .format(DateTime.parse(workout.date)),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Completed: $completedExercises'),
-                              Text('Incomplete: $incompleteExercises'),
-                            ],
-                          ),
-                          trailing: Icon(Icons.arrow_forward_rounded, size: 18),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    WorkoutDetailsPage(workout),
-                              ),
-                            );
-                          },
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 5),
+                  child: ListTile(
+                    title: Text(
+                      DateFormat('yyyy-MM-dd h:mm a')
+                          .format(DateTime.parse(workout.date)),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Completed: $completedExercises'),
+                        Text('Incomplete: $incompleteExercises'),
+                      ],
+                    ),
+                    trailing: Icon(Icons.arrow_forward_rounded, size: 18),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              WorkoutDetailsPage(workout),
                         ),
                       );
                     },
                   ),
+                );
+              },
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
