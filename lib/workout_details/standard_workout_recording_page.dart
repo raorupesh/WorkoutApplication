@@ -55,22 +55,19 @@ class _WorkoutRecordingPageState extends State<StandardWorkoutRecordingPage> {
       exerciseResults: exerciseResults,
     );
 
-    await Provider.of<WorkoutProvider>(context, listen: false)
-        .addWorkout(workout);
+    await Provider.of<WorkoutProvider>(context, listen: false).addWorkout(workout);
 
-    // Redirect user to the correct page after saving
-    if (widget.workoutPlan == null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => WorkoutHistoryPage()),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => WorkoutPlanSelectionPage()),
-      );
-    }
+    // Ensure only one instance of history page exists
+    Navigator.popUntil(context, (route) => route.isFirst);
+
+    // Push history page if not already there
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => WorkoutHistoryPage()),
+    );
   }
+
+
 
   @override
   Widget build(BuildContext context) {

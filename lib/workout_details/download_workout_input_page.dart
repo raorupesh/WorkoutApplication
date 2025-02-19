@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:workoutpage/workout_details/workout_history_page.dart';
 import '../models/workout_model.dart';
 import '../widgets/meters_input_widget.dart';
 import '../widgets/numeric_input_widget.dart';
@@ -38,7 +39,14 @@ class _DownloadedWorkoutInputPageState extends State<DownloadedWorkoutInputPage>
     );
 
     await Provider.of<WorkoutProvider>(context, listen: false).addWorkout(workout);
-    Navigator.pop(context);
+    // Ensure only one instance of history page exists
+    Navigator.popUntil(context, (route) => route.isFirst);
+
+    // Push history page if not already there
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => WorkoutHistoryPage()),
+    );
   }
 
   @override

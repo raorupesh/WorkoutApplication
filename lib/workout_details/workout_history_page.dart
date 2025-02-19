@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
 import '../main.dart';
 import '../widgets/recent_performance_widget.dart';
 import 'workout_details_page.dart';
