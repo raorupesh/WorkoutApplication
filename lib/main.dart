@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'models/workout_model.dart';
 import 'services/database_service.dart';
-import 'workout_details/workout_history_page.dart';
+import 'splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +15,7 @@ void main() async {
     ChangeNotifierProvider(
       create: (_) => workoutProvider,
       child: MaterialApp(
-        title: 'Workout Tracker',
+        title: 'CoreSync',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.teal,
@@ -29,7 +28,7 @@ void main() async {
             ),
           ),
         ),
-        home: WorkoutHistoryPage(),
+        home: SplashScreen(), // Start with SplashScreen
       ),
     ),
   );
@@ -41,7 +40,6 @@ class WorkoutProvider with ChangeNotifier {
 
   // Expose them via getters
   List<Workout> get workouts => _workouts;
-
   List<Workout> get downloadedPlans => _downloadedPlans;
 
   // This runs once at app startup (see main())
@@ -55,7 +53,6 @@ class WorkoutProvider with ChangeNotifier {
   Future<void> addWorkout(Workout workout) async {
     _workouts.add(workout);
     notifyListeners();
-    // Persist to DB
     await DBService.instance.insertCompletedWorkout(workout);
   }
 
@@ -63,7 +60,6 @@ class WorkoutProvider with ChangeNotifier {
   Future<void> addDownloadedPlan(Workout plan) async {
     _downloadedPlans.add(plan);
     notifyListeners();
-    // Persist to DB
     await DBService.instance.insertDownloadedPlan(plan);
   }
 }

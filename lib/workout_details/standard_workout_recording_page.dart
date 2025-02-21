@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:workoutpage/workout_details/workout_selection_page.dart';
 import '../main.dart';
 import '../models/workout_model.dart';
 import '../widgets/meters_input_widget.dart';
