@@ -5,6 +5,7 @@ import '../main.dart';
 import '../widgets/recent_performance_widget.dart';
 import 'workout_details_page.dart';
 import 'workout_selection_page.dart';
+import 'join_workout_page.dart'; // Add this import
 
 class WorkoutHistoryPage extends StatelessWidget {
   @override
@@ -67,8 +68,7 @@ class WorkoutHistoryPage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              WorkoutDetailsPage(workout),
+                          builder: (context) => WorkoutDetailsPage(workout),
                         ),
                       );
                     },
@@ -77,6 +77,61 @@ class WorkoutHistoryPage extends StatelessWidget {
               },
             ),
           ),
+
+          // Add a Column for the buttons aligned to the right
+          Align(
+            alignment: Alignment.centerRight, // Align the buttons to the right
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16.0), // Add some right padding for spacing
+              child: Column(
+                children: [
+                  // Existing button for selecting workout plan
+                  Tooltip(
+                    message: 'Select Workout Plan',  // Hover text
+                    child: AnimatedOpacity(
+                      opacity: 1.0,  // Add transition opacity effect if needed
+                      duration: Duration(milliseconds: 300),
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => WorkoutPlanSelectionPage(),
+                            ),
+                          );
+                        },
+                        child: Icon(Icons.add),
+                        backgroundColor: Colors.teal,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10), // Space between buttons
+                  // New button for joining workout
+                  Tooltip(
+                    message: 'Join Workout',  // Hover text
+                    child: AnimatedOpacity(
+                      opacity: 1.0,  // Add transition opacity effect if needed
+                      duration: Duration(milliseconds: 300),
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => JoinWorkoutPage(),
+                            ),
+                          );
+                        },
+                        child: Icon(Icons.link),
+                        backgroundColor: Colors.teal,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Add RecentPerformanceWidget below the buttons
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Container(
@@ -86,18 +141,6 @@ class WorkoutHistoryPage extends StatelessWidget {
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => WorkoutPlanSelectionPage(),
-            ),
-          );
-        },
-        child: Icon(Icons.add),
-        backgroundColor: Colors.teal,
       ),
     );
   }
