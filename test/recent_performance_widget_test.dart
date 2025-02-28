@@ -7,8 +7,7 @@ import 'package:workoutpage/widgets/recent_performance_widget.dart';
 
 void main() {
   group('RecentPerformanceWidget Tests', () {
-    testWidgets('Displays "No workout done" when there are no workouts',
-        (WidgetTester tester) async {
+    testWidgets('Displays "No workout done" when there are no workouts', (WidgetTester tester) async {
       final mockWorkoutProvider = WorkoutProvider();
 
       await tester.pumpWidget(
@@ -25,8 +24,7 @@ void main() {
       expect(find.text("No workout done."), findsOneWidget);
     });
 
-    testWidgets('Displays performance scores when workouts exist',
-        (WidgetTester tester) async {
+    testWidgets('Displays performance scores when workouts exist', (WidgetTester tester) async {
       final mockWorkoutProvider = WorkoutProvider();
       final now = DateTime.now();
 

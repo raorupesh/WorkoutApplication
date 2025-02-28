@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-
+import 'package:workoutpage/workout_details/download_workout_input_page.dart';
 import '../main.dart';
 import '../widgets/recent_performance_widget.dart';
+import '../workout_details/standard_workout_recording_page.dart';
+import 'download_workout_page.dart';
 
 class WorkoutPlanSelectionPage extends StatelessWidget {
   @override
@@ -15,7 +16,7 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
       appBar: AppBar(
         title: Text("Workout Selection"),
         centerTitle: true,
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.teal, // Teal-colored AppBar
       ),
       body: Column(
         children: [
@@ -35,15 +36,22 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
                   ),
                   SizedBox(height: 20),
 
-                  // Standard Workout Card
+                  // Standard Workout Card (FULLY CLICKABLE)
                   GestureDetector(
-                    onTap: () => context.push('/workout-recording'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => StandardWorkoutRecordingPage(),
+                        ),
+                      );
+                    },
                     child: Card(
                       elevation: 4,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      color: Colors.teal.shade50,
+                      color: Colors.teal.shade50, // Light Teal Background
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                             vertical: 16.0, horizontal: 20),
@@ -76,7 +84,14 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
 
                   // Download Workout Plan Button
                   ElevatedButton.icon(
-                    onPressed: () => context.push('/download-workout'),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DownloadWorkoutPage(),
+                        ),
+                      );
+                    },
                     icon: Icon(Icons.download, size: 24),
                     label: Text(
                       "Download Workout Plan",
@@ -85,6 +100,7 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       minimumSize: Size(double.infinity, 50),
                       backgroundColor: Colors.teal,
+                      // Changed to Teal for Consistency
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -123,7 +139,8 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                color: Colors.teal.shade50,
+                                color: Colors
+                                    .teal.shade50, // Light Teal Background
                                 child: ListTile(
                                   title: Text(plan.workoutName,
                                       style: TextStyle(
@@ -134,9 +151,13 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
                                   trailing: Icon(Icons.arrow_forward_ios,
                                       size: 18, color: Colors.teal),
                                   onTap: () {
-                                    context.push(
-                                      '/download-workout-input',
-                                      extra: plan, // Pass the workout object
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            DownloadedWorkoutInputPage(
+                                                workoutPlan: plan),
+                                      ),
                                     );
                                   },
                                 ),

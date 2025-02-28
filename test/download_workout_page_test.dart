@@ -4,14 +4,15 @@ import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 import 'package:workoutpage/main.dart';
 import 'package:workoutpage/workout_details/download_workout_page.dart';
+import 'package:workoutpage/models/workout_model.dart';
 
 // Mock WorkoutProvider for dependency injection
 class MockWorkoutProvider extends Mock implements WorkoutProvider {}
 
 void main() {
   group('DownloadWorkoutPage Tests', () {
-    testWidgets('Displays an error message when an invalid URL is entered',
-        (WidgetTester tester) async {
+
+    testWidgets('Displays an error message when an invalid URL is entered', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: ChangeNotifierProvider(
@@ -31,5 +32,6 @@ void main() {
       // Check for an error message
       expect(find.textContaining("Failed to fetch content"), findsOneWidget);
     });
+
   });
 }

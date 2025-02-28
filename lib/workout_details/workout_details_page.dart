@@ -1,24 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../models/workout_model.dart';
-import '../widgets/recent_performance_widget.dart';
+import '../widgets/recent_performance_widget.dart'; // Import the workout model to get the Workout and ExerciseResult classes
 
 class WorkoutDetailsPage extends StatelessWidget {
   final Workout workout;
 
   // Constructor to receive the workout from the previous page
-  const WorkoutDetailsPage({required this.workout, Key? key}) : super(key: key);
+  WorkoutDetailsPage(this.workout);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Workout Details'),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => context.pop(), // Replaces Navigator.pop()
-        ),
       ),
       body: workout.exercises.isEmpty
           ? Center(child: Text('No exercises completed'))
@@ -30,8 +25,11 @@ class WorkoutDetailsPage extends StatelessWidget {
                     ? workout.exerciseResults[index]
                     : null; // Safe check in case exerciseResults is shorter than exercises
 
-                bool isCompleted = exerciseResult != null &&
-                    exerciseResult.achievedOutput >= exercise.targetOutput;
+                bool isCompleted = false;
+                if (exerciseResult != null) {
+                  isCompleted =
+                      exerciseResult.achievedOutput >= exercise.targetOutput;
+                }
 
                 return ListTile(
                   title: Text(exercise.name),
