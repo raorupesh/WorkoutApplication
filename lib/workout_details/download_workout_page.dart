@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:html/parser.dart' as htmlParser;
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -98,12 +99,12 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
 
   void _saveWorkout() {
     if (_workoutPlan != null) {
-      // Instead of adding to the main workouts, we add to the downloaded plans
       Provider.of<WorkoutProvider>(context, listen: false)
           .addDownloadedPlan(_workoutPlan!);
 
-      // Then navigate back or forward as you wish
-      Navigator.pop(context);
+      // Use go_router instead of Navigator.pop()
+      context
+          .go('/workout-selection'); // Redirects to the workout selection page
     }
   }
 

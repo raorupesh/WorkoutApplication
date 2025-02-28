@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../main.dart';
 import '../widgets/recent_performance_widget.dart';
-import 'workout_details_page.dart';
-import 'workout_selection_page.dart';
-import 'join_workout_page.dart'; // Add this import
 
 class WorkoutHistoryPage extends StatelessWidget {
   @override
@@ -13,7 +12,8 @@ class WorkoutHistoryPage extends StatelessWidget {
     final workouts = Provider.of<WorkoutProvider>(context).workouts;
 
     // Sort workouts in descending order (newest first)
-    workouts.sort((a, b) => DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
+    workouts.sort(
+        (a, b) => DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
 
     return Scaffold(
       appBar: AppBar(
@@ -38,67 +38,58 @@ class WorkoutHistoryPage extends StatelessWidget {
             child: workouts.isEmpty
                 ? Center(child: Text('No workouts recorded yet.'))
                 : ListView.builder(
-              itemCount: workouts.length,
-              itemBuilder: (context, index) {
-                final workout = workouts[index];
-                final completedExercises = workout.exerciseResults
-                    .where((result) =>
-                result.achievedOutput >=
-                    workout.exercises[index].targetOutput)
-                    .length;
-                final incompleteExercises =
-                    workout.exerciseResults.length - completedExercises;
+                    itemCount: workouts.length,
+                    itemBuilder: (context, index) {
+                      final workout = workouts[index];
+                      final completedExercises = workout.exerciseResults
+                          .where((result) =>
+                              result.achievedOutput >=
+                              workout.exercises[index].targetOutput)
+                          .length;
+                      final incompleteExercises =
+                          workout.exerciseResults.length - completedExercises;
 
-                return Card(
-                  margin: EdgeInsets.symmetric(vertical: 5),
-                  child: ListTile(
-                    title: Text(
-                      DateFormat('yyyy-MM-dd h:mm a')
-                          .format(DateTime.parse(workout.date)),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Completed: $completedExercises'),
-                        Text('Incomplete: $incompleteExercises'),
-                      ],
-                    ),
-                    trailing: Icon(Icons.arrow_forward_rounded, size: 18),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => WorkoutDetailsPage(workout),
+                      return Card(
+                        margin: EdgeInsets.symmetric(vertical: 5),
+                        child: ListTile(
+                          title: Text(
+                            DateFormat('yyyy-MM-dd h:mm a')
+                                .format(DateTime.parse(workout.date)),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Completed: $completedExercises'),
+                              Text('Incomplete: $incompleteExercises'),
+                            ],
+                          ),
+                          trailing: Icon(Icons.arrow_forward_rounded, size: 18),
+                          onTap: () {
+                            context.push('/workout-details', extra: workout);
+                          },
                         ),
                       );
                     },
                   ),
-                );
-              },
-            ),
           ),
 
           // Add a Column for the buttons aligned to the right
           Align(
             alignment: Alignment.centerRight, // Align the buttons to the right
             child: Padding(
-              padding: const EdgeInsets.only(right: 16.0), // Add some right padding for spacing
+              padding: const EdgeInsets.only(right: 16.0),
+              // Add some right padding for spacing
               child: Column(
                 children: [
                   // Existing button for selecting workout plan
                   Tooltip(
-                    message: 'Select Workout Plan',  // Hover text
+                    message: 'Select Workout Plan', // Hover text
                     child: AnimatedOpacity(
-                      opacity: 1.0,  // Add transition opacity effect if needed
+                      opacity: 1.0, // Add transition opacity effect if needed
                       duration: Duration(milliseconds: 300),
                       child: FloatingActionButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => WorkoutPlanSelectionPage(),
-                            ),
-                          );
+                          context.push('/workout-selection');
                         },
                         child: Icon(Icons.add),
                         backgroundColor: Colors.teal,
@@ -108,18 +99,13 @@ class WorkoutHistoryPage extends StatelessWidget {
                   SizedBox(height: 10), // Space between buttons
                   // New button for joining workout
                   Tooltip(
-                    message: 'Join Workout',  // Hover text
+                    message: 'Join Workout', // Hover text
                     child: AnimatedOpacity(
-                      opacity: 1.0,  // Add transition opacity effect if needed
+                      opacity: 1.0, // Add transition opacity effect if needed
                       duration: Duration(milliseconds: 300),
                       child: FloatingActionButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => JoinWorkoutPage(),
-                            ),
-                          );
+                          context.push('/join-workout');
                         },
                         child: Icon(Icons.link),
                         backgroundColor: Colors.teal,
