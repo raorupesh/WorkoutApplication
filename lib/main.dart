@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:workoutpage/workout_details/join_workout_page.dart';
 
 import 'models/workout_model.dart';
 import 'services/database_service.dart';
@@ -34,6 +35,7 @@ class MyApp extends StatelessWidget {
     routes: [
       GoRoute(path: '/splash', builder: (context, state) => SplashScreen()),
       GoRoute(path: '/', builder: (context, state) => WorkoutHistoryPage()),
+      GoRoute(path: '/join-workout', builder: (context, state) => JoinWorkoutPage()),
       GoRoute(
           path: '/workout-selection',
           builder: (context, state) => WorkoutPlanSelectionPage()),
