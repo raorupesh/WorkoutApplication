@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-
 import '../main.dart';
 import '../models/workout_model.dart';
 import '../widgets/meters_input_widget.dart';
 import '../widgets/numeric_input_widget.dart';
 import '../widgets/recent_performance_widget.dart';
 import '../widgets/time_input_widget.dart';
+import 'workout_history_page.dart';
 
 class StandardWorkoutRecordingPage extends StatefulWidget {
   final Workout? workoutPlan;
@@ -55,12 +54,19 @@ class _WorkoutRecordingPageState extends State<StandardWorkoutRecordingPage> {
       exerciseResults: exerciseResults,
     );
 
-    await Provider.of<WorkoutProvider>(context, listen: false)
-        .addWorkout(workout);
+    await Provider.of<WorkoutProvider>(context, listen: false).addWorkout(workout);
 
-    // Navigate back to Workout History Page using go_router
-    context.go('/');
+    // Ensure only one instance of history page exists
+    Navigator.popUntil(context, (route) => route.isFirst);
+
+    // Push history page if not already there
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => WorkoutHistoryPage()),
+    );
   }
+
+
 
   @override
   Widget build(BuildContext context) {

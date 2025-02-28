@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:workoutpage/workout_details/workout_history_page.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -11,9 +11,10 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Future.delayed(Duration(seconds: 3), () {
-      if (mounted) {
-        context.go('/'); // Navigate to WorkoutHistoryPage using go_router
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => WorkoutHistoryPage()),
+      );
     });
   }
 

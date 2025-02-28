@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class JoinWorkoutPage extends StatefulWidget {
   @override
@@ -18,11 +17,11 @@ class _JoinWorkoutPageState extends State<JoinWorkoutPage> {
   void _joinWorkout() {
     final url = _urlController.text;
     if (url.isNotEmpty) {
+      // Handle the URL (You could validate and join the workout with the URL here)
       print('Joining workout with URL: $url');
-
-      // Navigate back to the workout selection page
-      context.go('/workout-selection');
+      // You could navigate to a new page or show a success message
     } else {
+      // Show a message if the URL is empty
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please enter a URL to join the workout')),
       );
@@ -32,14 +31,19 @@ class _JoinWorkoutPageState extends State<JoinWorkoutPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Join Workout'), centerTitle: true),
+      appBar: AppBar(
+        title: Text('Join Workout'),
+        centerTitle: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(18.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Enter the URL to join a workout:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Enter the URL to join a workout:',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             SizedBox(height: 16),
             TextField(
               controller: _urlController,
@@ -54,7 +58,7 @@ class _JoinWorkoutPageState extends State<JoinWorkoutPage> {
               onPressed: _joinWorkout,
               child: Text('Join Workout'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
+                backgroundColor: Colors.teal, // Button color
                 padding: EdgeInsets.symmetric(vertical: 16),
                 textStyle: TextStyle(fontSize: 16),
               ),
