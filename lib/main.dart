@@ -7,6 +7,7 @@ import 'services/database_service.dart';
 import 'splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
 import 'workout_details/workout_history_page.dart';
 import 'workout_details/join_workout_page.dart';
 import 'workout_details/workout_details_page.dart';
@@ -19,6 +20,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await _ensureAnonymousAuthentication(); // Add anonymous auth
+
   final workoutProvider = WorkoutProvider();
   await workoutProvider.initProvider();
 
@@ -28,6 +32,20 @@ void main() async {
       child: MyApp(),
     ),
   );
+}
+
+Future<void> _ensureAnonymousAuthentication() async {
+  try {
+    final auth = FirebaseAuth.instance;
+    if (auth.currentUser == null) {
+      await auth.signInAnonymously();
+      print("Anonymous sign-in successful. UID: ${auth.currentUser!.uid}");
+    } else {
+      print("User already signed in. UID: ${auth.currentUser!.uid}");
+    }
+  } catch (e) {
+    print("Error during anonymous sign-in: $e");
+  }
 }
 
 class WorkoutProvider with ChangeNotifier {
