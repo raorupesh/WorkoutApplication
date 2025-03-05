@@ -64,6 +64,13 @@ class _WorkoutRecordingPageState extends State<StandardWorkoutRecordingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate back to the previous screen
+            context.go('/workoutPlanSelection');
+          },
+        ),
         title: Text(widget.workoutPlan?.workoutName ?? 'Record Workout'),
       ),
       body: ListView.builder(

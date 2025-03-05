@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:workoutpage/workout_details/workout_selection_page.dart';
+import 'group_workouts/collaborative_workout_page.dart';
+import 'group_workouts/competitive_workout_page.dart';
 import 'models/workout_model.dart';
 import 'services/database_service.dart';
 import 'splash_screen.dart';
@@ -118,6 +120,18 @@ final _router = GoRouter(
     GoRoute(
       path: '/workoutHistory',
       builder: (context, state) => WorkoutHistoryPage(),
+    ),
+    GoRoute(
+      path: '/joinWorkout',
+      builder: (context, state) => JoinWorkoutPage(),
+    ),
+    GoRoute(
+      path: '/collaborativeWorkoutCode',
+      builder: (context, state) => CollaborativeWorkoutCodePage(),
+    ),
+    GoRoute(
+      path: '/competitiveWorkoutCode',
+      builder: (context, state) => CompetitiveWorkoutCodePage(),
     ),
   ],
 );

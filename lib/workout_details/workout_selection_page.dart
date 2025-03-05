@@ -12,6 +12,14 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        // Add leading back button
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate back to the previous screen
+            context.go('/workoutHistory');
+          },
+        ),
         title: Text("Workout Selection"),
         centerTitle: true,
         backgroundColor: Colors.teal,

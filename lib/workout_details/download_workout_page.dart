@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../main.dart';
 import '../models/workout_model.dart';
+import '../widgets/recent_performance_widget.dart';
 
 class DownloadWorkoutPage extends StatefulWidget {
   @override
@@ -101,16 +102,21 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
     if (_workoutPlan != null) {
       Provider.of<WorkoutProvider>(context, listen: false)
           .addDownloadedPlan(_workoutPlan!);
-
       // Navigate back using go_router
-      context.pop();
+      context.go('/workoutPlanSelection');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Download Workout Plan")),
+      appBar: AppBar(        leading: IconButton(
+        icon: Icon(Icons.arrow_back),
+        onPressed: () {
+          // Navigate back to the previous screen
+          context.go('/workoutPlanSelection');
+        },
+      ),title: Text("Download Workout Plan")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -168,6 +174,14 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                   onPressed: _saveWorkout, child: Text("Save Workout")),
             ],
           ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Container(
+          width: double.infinity,
+          height: 80,
+          child: RecentPerformanceWidget(),
         ),
       ),
     );

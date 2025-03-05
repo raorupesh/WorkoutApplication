@@ -6,6 +6,7 @@ import '../widgets/meters_input_widget.dart';
 import '../widgets/numeric_input_widget.dart';
 import '../widgets/time_input_widget.dart';
 import '../main.dart';
+import '../widgets/recent_performance_widget.dart';
 
 class DownloadedWorkoutInputPage extends StatefulWidget {
   final Workout workoutPlan;
@@ -46,60 +47,99 @@ class _DownloadedWorkoutInputPageState extends State<DownloadedWorkoutInputPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.workoutPlan.workoutName)),
-      body: ListView.builder(
-        itemCount: widget.workoutPlan.exercises.length,
-        itemBuilder: (context, index) {
-          final exercise = widget.workoutPlan.exercises[index];
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate back to the previous screen
+            context.go('/workoutPlanSelection');
+          },
+        ),
+        title: Text(widget.workoutPlan.workoutName),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: widget.workoutPlan.exercises.length,
+                itemBuilder: (context, index) {
+                  final exercise = widget.workoutPlan.exercises[index];
 
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  exercise.name,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  'Target: ${exercise.targetOutput} ${exercise.type}',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-                SizedBox(height: 10),
-                if (exercise.type == 'meters')
-                  MetersInputWidget(
-                    onInputChanged: (value) {
-                      setState(() {
-                        exerciseOutputs[index] = value;
-                      });
-                    },
-                  ),
-                if (exercise.type == 'seconds')
-                  TimeInputWidget(
-                    onInputChanged: (value) {
-                      setState(() {
-                        exerciseOutputs[index] = value;
-                      });
-                    },
-                  ),
-                if (exercise.type == 'reps')
-                  NumericInputWidget(
-                    label: exercise.type,
-                    initialValue: 0,
-                    onInputChanged: (value) {
-                      setState(() {
-                        exerciseOutputs[index] = value;
-                      });
-                    },
-                  ),
-              ],
+                  return Card(
+                    elevation: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            exercise.name,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Target: ${exercise.targetOutput} ${exercise.type}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          if (exercise.type == 'meters')
+                            MetersInputWidget(
+                              onInputChanged: (value) {
+                                setState(() {
+                                  exerciseOutputs[index] = value;
+                                });
+                              },
+                            ),
+                          if (exercise.type == 'seconds')
+                            TimeInputWidget(
+                              onInputChanged: (value) {
+                                setState(() {
+                                  exerciseOutputs[index] = value;
+                                });
+                              },
+                            ),
+                          if (exercise.type == 'reps')
+                            NumericInputWidget(
+                              label: exercise.type,
+                              initialValue: 0,
+                              onInputChanged: (value) {
+                                setState(() {
+                                  exerciseOutputs[index] = value;
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-          );
-        },
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _saveWorkout,
         child: Icon(Icons.save),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Container(
+          width: double.infinity,
+          height: 80,
+          child: RecentPerformanceWidget(),
+        ),
       ),
     );
   }
