@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../main.dart';
 import '../widgets/recent_performance_widget.dart';
-import 'workout_details_page.dart';
-import 'workout_selection_page.dart';
-import 'join_workout_page.dart'; // Add this import
 
 class WorkoutHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final workouts = Provider.of<WorkoutProvider>(context).workouts;
 
-    // Sort workouts in descending order (newest first)
     workouts.sort((a, b) => DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
 
     return Scaffold(
@@ -65,61 +62,44 @@ class WorkoutHistoryPage extends StatelessWidget {
                     ),
                     trailing: Icon(Icons.arrow_forward_rounded, size: 18),
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => WorkoutDetailsPage(workout),
-                        ),
-                      );
+                      context.push('/workoutDetails', extra: workout);
                     },
                   ),
                 );
               },
             ),
           ),
-
-          // Add a Column for the buttons aligned to the right
           Align(
-            alignment: Alignment.centerRight, // Align the buttons to the right
+            alignment: Alignment.centerRight,
             child: Padding(
-              padding: const EdgeInsets.only(right: 16.0), // Add some right padding for spacing
+              padding: const EdgeInsets.only(right: 16.0),
               child: Column(
                 children: [
-                  // Existing button for selecting workout plan
                   Tooltip(
-                    message: 'Select Workout Plan',  // Hover text
+                    message: 'Select Workout Plan',
                     child: AnimatedOpacity(
-                      opacity: 1.0,  // Add transition opacity effect if needed
+                      opacity: 1.0,
                       duration: Duration(milliseconds: 300),
                       child: FloatingActionButton(
+                        heroTag: "workoutPlanSelectionButton", // Unique tag
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => WorkoutPlanSelectionPage(),
-                            ),
-                          );
+                          context.push('/workoutPlanSelection');
                         },
                         child: Icon(Icons.add),
                         backgroundColor: Colors.teal,
                       ),
                     ),
                   ),
-                  SizedBox(height: 10), // Space between buttons
-                  // New button for joining workout
+                  SizedBox(height: 10),
                   Tooltip(
-                    message: 'Join Workout',  // Hover text
+                    message: 'Join Workout',
                     child: AnimatedOpacity(
-                      opacity: 1.0,  // Add transition opacity effect if needed
+                      opacity: 1.0,
                       duration: Duration(milliseconds: 300),
                       child: FloatingActionButton(
+                        heroTag: "joinWorkoutButton", // Unique tag
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => JoinWorkoutPage(),
-                            ),
-                          );
+                          context.push('/joinWorkout');
                         },
                         child: Icon(Icons.link),
                         backgroundColor: Colors.teal,
@@ -130,8 +110,6 @@ class WorkoutHistoryPage extends StatelessWidget {
               ),
             ),
           ),
-
-          // Add RecentPerformanceWidget below the buttons
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Container(

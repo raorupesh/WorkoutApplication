@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:html/parser.dart' as htmlParser;
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -36,11 +37,11 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
           _extractJsonLinks(response.body, url);
         } else {
           setState(
-              () => _errorMessage = "Unsupported content type: $contentType");
+                  () => _errorMessage = "Unsupported content type: $contentType");
         }
       } else {
         setState(
-            () => _errorMessage = "Failed to fetch content. Check the URL.");
+                () => _errorMessage = "Failed to fetch content. Check the URL.");
       }
     } catch (e) {
       setState(() => _errorMessage = "Error fetching content: $e");
@@ -75,7 +76,7 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
       setState(() {
         _jsonLinks = jsonUrls;
         _errorMessage =
-            jsonUrls.isEmpty ? "No JSON links found on the page." : null;
+        jsonUrls.isEmpty ? "No JSON links found on the page." : null;
       });
     } catch (e) {
       setState(() => _errorMessage = "Error parsing HTML: $e");
@@ -89,7 +90,7 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
         _parseWorkoutJson(response.body);
       } else {
         setState(
-            () => _errorMessage = "Failed to fetch selected workout plan.");
+                () => _errorMessage = "Failed to fetch selected workout plan.");
       }
     } catch (e) {
       setState(() => _errorMessage = "Error fetching workout plan: $e");
@@ -98,12 +99,11 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
 
   void _saveWorkout() {
     if (_workoutPlan != null) {
-      // Instead of adding to the main workouts, we add to the downloaded plans
       Provider.of<WorkoutProvider>(context, listen: false)
           .addDownloadedPlan(_workoutPlan!);
 
-      // Then navigate back or forward as you wish
-      Navigator.pop(context);
+      // Navigate back using go_router
+      context.pop();
     }
   }
 
