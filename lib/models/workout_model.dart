@@ -23,19 +23,18 @@ class Workout {
 
   /// Factory method to create a Workout from JSON
   factory Workout.fromJson(Map<String, dynamic> json) {
+    print("Workout JSON: $json"); // Debugging
+
     return Workout(
-      workoutName: json['workoutName'] ?? "Unnamed Workout",
-      date: json['date'] ?? DateTime.now().toIso8601String(),
-      exercises: (json['exercises'] as List?)
-              ?.map((e) => Exercise.fromJson(e))
-              .toList() ??
-          [],
-      exerciseResults: (json['exerciseResults'] as List?)
-              ?.map((r) => ExerciseResult.fromJson(r))
-              .toList() ??
+      workoutName: json['name'] ?? "Unnamed Workout",
+      date: DateTime.now().toIso8601String(),
+      exercises: (json['exercises'] as List<dynamic>?)
+          ?.map((exercise) => Exercise.fromJson(exercise))
+          .toList() ??
           [],
     );
   }
+
 }
 
 class Exercise {
@@ -57,12 +56,15 @@ class Exercise {
 
   /// Create Exercise from JSON
   factory Exercise.fromJson(Map<String, dynamic> json) {
+    print("Parsing Exercise JSON: $json"); // Debugging
+
     return Exercise(
       name: json['name'] ?? "Unknown",
-      targetOutput: json['targetOutput'] ?? 0,
-      type: json['type'] ?? "",
+      targetOutput: json['target'] ?? 0,
+      type: json['unit'] ?? "", // This should match the API response
     );
   }
+
 }
 
 class ExerciseResult {

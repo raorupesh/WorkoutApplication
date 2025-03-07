@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-
 import '../main.dart';
 import '../models/workout_model.dart';
 import '../widgets/meters_input_widget.dart';
@@ -97,7 +96,7 @@ class _DownloadedWorkoutInputPageState
                             ),
                           ),
                           SizedBox(height: 16),
-                          if (exercise.type == 'meters')
+                          if (exercise.type.toLowerCase() == 'meters')
                             MetersInputWidget(
                               onInputChanged: (value) {
                                 setState(() {
@@ -105,7 +104,7 @@ class _DownloadedWorkoutInputPageState
                                 });
                               },
                             ),
-                          if (exercise.type == 'seconds')
+                          if (exercise.type.toLowerCase() == 'seconds')
                             TimeInputWidget(
                               onInputChanged: (value) {
                                 setState(() {
@@ -113,7 +112,7 @@ class _DownloadedWorkoutInputPageState
                                 });
                               },
                             ),
-                          if (exercise.type == 'reps')
+                          if (exercise.type.toLowerCase() == 'reps')
                             NumericInputWidget(
                               label: exercise.type,
                               initialValue: 0,
