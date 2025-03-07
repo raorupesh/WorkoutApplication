@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -25,7 +25,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await _ensureAnonymousAuthentication(); // Add anonymous auth
+  await _ensureAnonymousAuthentication(); // Ensure Firebase Auth
 
   final workoutProvider = WorkoutProvider();
   await workoutProvider.initProvider();
@@ -57,7 +57,6 @@ class WorkoutProvider with ChangeNotifier {
   List<Workout> _downloadedPlans = [];
 
   List<Workout> get workouts => _workouts;
-
   List<Workout> get downloadedPlans => _downloadedPlans;
 
   Future<void> initProvider() async {
@@ -69,8 +68,9 @@ class WorkoutProvider with ChangeNotifier {
   Future<void> addWorkout(Workout workout) async {
     _workouts.add(workout);
     notifyListeners();
-    await DBService.instance.insertCompletedWorkout(workout);
+    await DBService.instance.insertCompletedWorkout(workout); // Ensure it saves
   }
+
 
   Future<void> addDownloadedPlan(Workout plan) async {
     _downloadedPlans.add(plan);
@@ -79,6 +79,7 @@ class WorkoutProvider with ChangeNotifier {
   }
 }
 
+// Define app routing
 final _router = GoRouter(
   initialLocation: '/splash', // Start with splash screen
   routes: [
@@ -101,7 +102,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/workoutDetails',
       builder: (context, state) {
-        final workout = state.extra as Workout;
+        final workout = state.extra as Workout?;
+        if (workout == null) {
+          return ErrorPage("Workout data is missing.");
+        }
         return WorkoutDetailsPage(workout);
       },
     ),
@@ -116,17 +120,16 @@ final _router = GoRouter(
     GoRoute(
       path: '/downloadedWorkoutInput',
       builder: (context, state) {
-        final workout = state.extra as Workout;
+        final workout = state.extra as Workout?;
+        if (workout == null) {
+          return ErrorPage("Workout data is missing.");
+        }
         return DownloadedWorkoutInputPage(workoutPlan: workout);
       },
     ),
     GoRoute(
       path: '/workoutHistory',
       builder: (context, state) => WorkoutHistoryPage(),
-    ),
-    GoRoute(
-      path: '/joinWorkout',
-      builder: (context, state) => JoinWorkoutPage(),
     ),
     GoRoute(
       path: '/collaborativeWorkoutCode',
@@ -139,7 +142,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/competitiveWorkoutDetails',
       builder: (context, state) {
-        final args = state.extra as Map<String, dynamic>;
+        final args = state.extra as Map<String, dynamic>?;
+        if (args == null || !args.containsKey('code') || !args.containsKey('workoutData')) {
+          return ErrorPage("Workout details are missing.");
+        }
         return CompetitiveWorkoutDetailsPage(
           workoutCode: args['code'],
           workoutData: args['workoutData'],
@@ -149,7 +155,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/collaborativeWorkoutDetails',
       builder: (context, state) {
-        final args = state.extra as Map<String, dynamic>;
+        final args = state.extra as Map<String, dynamic>?;
+        if (args == null || !args.containsKey('code') || !args.containsKey('workoutData')) {
+          return ErrorPage("Workout details are missing.");
+        }
         return CollaborativeWorkoutDetailsPage(
           workoutCode: args['code'],
           workoutData: args['workoutData'],
@@ -176,6 +185,23 @@ class MyApp extends StatelessWidget {
             color: Colors.white,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Error Page for missing data cases
+class ErrorPage extends StatelessWidget {
+  final String errorMessage;
+
+  const ErrorPage(this.errorMessage, {Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Error")),
+      body: Center(
+        child: Text(errorMessage, style: TextStyle(fontSize: 18, color: Colors.red)),
       ),
     );
   }

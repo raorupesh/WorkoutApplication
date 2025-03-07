@@ -52,21 +52,20 @@ class DBService {
   // ------- Completed Workouts --------
   Future<void> insertCompletedWorkout(Workout workout) async {
     final db = await database;
-    // Convert workout to JSON so we can store it in a single column
     String workoutJson = jsonEncode({
       'workoutName': workout.workoutName,
       'date': workout.date,
       'exercises': workout.exercises
-          .map(
-              (e) => {'name': e.name, 'target': e.targetOutput, 'unit': e.type})
+          .map((e) => {'name': e.name, 'target': e.targetOutput, 'unit': e.type})
           .toList(),
       'exerciseResults': workout.exerciseResults
           .map((r) =>
-              {'name': r.name, 'output': r.achievedOutput, 'type': r.type})
+      {'name': r.name, 'output': r.achievedOutput, 'type': r.type})
           .toList(),
     });
     await db.insert('workouts', {'workoutJson': workoutJson});
   }
+
 
   // Retrieve all completed workouts from database
   Future<List<Workout>> getAllCompletedWorkouts() async {

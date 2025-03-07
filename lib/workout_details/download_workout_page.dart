@@ -64,10 +64,7 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
 
   void _parseWorkoutJson(String jsonStr) {
     try {
-      print("Raw JSON Response: $jsonStr"); // Debug print
       final data = json.decode(jsonStr);
-      print("Parsed JSON: $data");
-
       setState(() {
         _workoutPlan = Workout.fromJson(data);
         _errorMessage = null;

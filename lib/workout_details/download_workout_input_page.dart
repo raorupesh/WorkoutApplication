@@ -40,12 +40,15 @@ class _DownloadedWorkoutInputPageState
       exerciseResults: exerciseResults,
     );
 
-    await Provider.of<WorkoutProvider>(context, listen: false)
-        .addWorkout(workout);
+    await Provider.of<WorkoutProvider>(context, listen: false).addWorkout(workout);
+
+    // Verify that workout is saved in the database
+    print("Workout saved: ${workout.workoutName}");
 
     // Navigate to WorkoutHistoryPage using go_router
     context.go('/workoutHistory');
   }
+
 
   @override
   Widget build(BuildContext context) {
