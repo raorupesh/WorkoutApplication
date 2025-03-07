@@ -48,10 +48,12 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
         } else if (contentType.contains("text/html")) {
           _extractJsonLinks(response.body, url);
         } else {
-          setState(() => _errorMessage = "Unsupported content type: $contentType");
+          setState(
+              () => _errorMessage = "Unsupported content type: $contentType");
         }
       } else {
-        setState(() => _errorMessage = "Failed to fetch content. Check the URL.");
+        setState(
+            () => _errorMessage = "Failed to fetch content. Check the URL.");
       }
     } catch (e) {
       setState(() => _errorMessage = "Error fetching content: $e");
@@ -87,7 +89,8 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
 
       setState(() {
         _jsonLinks = jsonUrls;
-        _errorMessage = jsonUrls.isEmpty ? "No JSON links found on the page." : null;
+        _errorMessage =
+            jsonUrls.isEmpty ? "No JSON links found on the page." : null;
       });
     } catch (e) {
       setState(() => _errorMessage = "Error parsing HTML: $e");
@@ -105,7 +108,8 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
       if (response.statusCode == 200) {
         _parseWorkoutJson(response.body);
       } else {
-        setState(() => _errorMessage = "Failed to fetch selected workout plan.");
+        setState(
+            () => _errorMessage = "Failed to fetch selected workout plan.");
       }
     } catch (e) {
       setState(() => _errorMessage = "Error fetching workout plan: $e");
@@ -120,7 +124,8 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
           .addDownloadedPlan(_workoutPlan!);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Workout plan "${_workoutPlan!.workoutName}" saved successfully!'),
+          content: Text(
+              'Workout plan "${_workoutPlan!.workoutName}" saved successfully!'),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
         ),
@@ -151,7 +156,8 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
               // URL Input Section
               Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -159,7 +165,8 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                     children: [
                       Text(
                         "Enter Workout URL",
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: 12),
                       TextField(
@@ -182,12 +189,13 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                           onPressed: _isLoading ? null : _fetchContent,
                           icon: _isLoading
                               ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2)
-                          )
+                                  width: 20,
+                                  height: 20,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2))
                               : Icon(Icons.download),
-                          label: Text(_isLoading ? "Downloading..." : "Download Plan"),
+                          label: Text(
+                              _isLoading ? "Downloading..." : "Download Plan"),
                           style: ElevatedButton.styleFrom(
                             padding: EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
@@ -231,13 +239,15 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                 SizedBox(height: 20),
                 Text(
                   "Available Workout Plans",
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
                 Expanded(
                   child: Card(
                     elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     child: ListView.separated(
                       padding: EdgeInsets.all(8),
                       itemCount: _jsonLinks.length,
@@ -247,7 +257,8 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                         final fileName = linkUri.pathSegments.last;
 
                         return ListTile(
-                          leading: Icon(Icons.fitness_center, color: theme.colorScheme.primary),
+                          leading: Icon(Icons.fitness_center,
+                              color: theme.colorScheme.primary),
                           title: Text(
                             fileName,
                             style: TextStyle(fontWeight: FontWeight.w500),
@@ -259,7 +270,10 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           trailing: ElevatedButton(
-                            onPressed: _isLoading ? null : () => _fetchSelectedWorkout(_jsonLinks[index]),
+                            onPressed: _isLoading
+                                ? null
+                                : () =>
+                                    _fetchSelectedWorkout(_jsonLinks[index]),
                             child: Text("Load"),
                             style: ElevatedButton.styleFrom(
                               shape: RoundedRectangleBorder(
@@ -267,7 +281,8 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                               ),
                             ),
                           ),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         );
                       },
                     ),
@@ -307,7 +322,8 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                             Text(
                               "${_workoutPlan!.exercises.length} exercises",
                               style: TextStyle(
-                                color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
+                                color: theme.colorScheme.onPrimaryContainer
+                                    .withOpacity(0.8),
                               ),
                             ),
                           ],
@@ -319,13 +335,15 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                 SizedBox(height: 12),
                 Text(
                   "Exercises",
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
                 Expanded(
                   child: Card(
                     elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     child: ListView.builder(
                       padding: EdgeInsets.all(8),
                       itemCount: _workoutPlan!.exercises.length,
@@ -337,7 +355,8 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                           margin: EdgeInsets.symmetric(vertical: 4),
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: theme.colorScheme.primaryContainer,
+                              backgroundColor:
+                                  theme.colorScheme.primaryContainer,
                               child: Text(
                                 "${index + 1}",
                                 style: TextStyle(
@@ -353,10 +372,12 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
                             subtitle: Text(
                               "Target: ${exercise.targetOutput} ${exercise.type}",
                               style: TextStyle(
-                                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.7),
                               ),
                             ),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                           ),
                         );
                       },

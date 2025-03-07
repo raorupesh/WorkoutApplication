@@ -8,8 +8,7 @@ class WorkoutCodeService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Future<Map<String, dynamic>?> validateWorkoutCode(
-      String code,
-      String workoutType // 'collaborative' or 'competitive'
+      String code, String workoutType // 'collaborative' or 'competitive'
       ) async {
     try {
       // Query Firestore for the workout code
@@ -40,7 +39,8 @@ class WorkoutCodeService {
       }
 
       // Optional: Check max participants
-      if (workoutData['currentParticipants'] >= workoutData['maxParticipants']) {
+      if (workoutData['currentParticipants'] >=
+          workoutData['maxParticipants']) {
         return null;
       }
 
@@ -70,7 +70,8 @@ class WorkoutCodeService {
       'code': code,
       'type': workoutType,
       'createdAt': FieldValue.serverTimestamp(),
-      'expiresAt': expiresAt ?? Timestamp.fromDate(DateTime.now().add(Duration(hours: 24))),
+      'expiresAt': expiresAt ??
+          Timestamp.fromDate(DateTime.now().add(Duration(hours: 24))),
       'maxParticipants': maxParticipants,
       'currentParticipants': 0,
       'active': true,

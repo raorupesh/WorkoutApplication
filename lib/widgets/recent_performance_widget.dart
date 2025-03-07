@@ -8,8 +8,8 @@ class RecentPerformanceWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<WorkoutProvider>(context);
-    final workouts = provider.workouts + provider.downloadedPlans; // Merge both lists
-
+    final workouts =
+        provider.workouts + provider.downloadedPlans; // Merge both lists
 
     // If no workouts are available, display the updated message "No workout done"
     if (workouts.isEmpty) {
@@ -52,7 +52,8 @@ class RecentPerformanceWidget extends StatelessWidget {
 
       if (workoutDate.isAfter(sevenDaysAgo)) {
         for (var exerciseResult in workout.exerciseResults) {
-          int target = getTargetForExercise(exerciseResult.name, exerciseResult.type);
+          int target =
+              getTargetForExercise(exerciseResult.name, exerciseResult.type);
 
           totalExercisesLast7Days++;
 
@@ -70,7 +71,6 @@ class RecentPerformanceWidget extends StatelessWidget {
         }
       }
     }
-
 
     // Calculate the overall performance score for the past 7 days
     double overallPerformanceScore = 0;

@@ -1,98 +1,116 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../firebase_validations/workout_code_validation.dart';
-import '../widgets/recent_performance_widget.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
-class CollaborativeWorkoutCodePage extends StatefulWidget {
+class CollaborativeWorkoutDetailsPage extends StatefulWidget {
+  final String workoutCode;
+  final Map<String, dynamic> workoutData;
+
+  const CollaborativeWorkoutDetailsPage({
+    Key? key,
+    required this.workoutCode,
+    required this.workoutData,
+  }) : super(key: key);
+
   @override
-  _CollaborativeWorkoutCodePageState createState() => _CollaborativeWorkoutCodePageState();
+  _CollaborativeWorkoutDetailsPageState createState() =>
+      _CollaborativeWorkoutDetailsPageState();
 }
 
-class _CollaborativeWorkoutCodePageState extends State<CollaborativeWorkoutCodePage> {
-  final TextEditingController _codeController = TextEditingController();
-  final WorkoutCodeService _codeService = WorkoutCodeService();
-  bool _isLoading = false;
+class _CollaborativeWorkoutDetailsPageState
+    extends State<CollaborativeWorkoutDetailsPage> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<void> _validateAndProceed() async {
-    if (_codeController.text.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter a valid 6-digit code')),
-      );
-      return;
-    }
+  List<Map<String, dynamic>> _exerciseProgress = [];
 
-    setState(() { _isLoading = true; });
+  @override
+  void initState() {
+    super.initState();
+    _initializeExerciseProgress();
+  }
 
-    try {
-      final workoutData = await _codeService.validateWorkoutCode(
-          _codeController.text,
-          'collaborative'
-      );
+  void _initializeExerciseProgress() {
+    final exercises = widget.workoutData['exercises'] as List<dynamic>;
+    _exerciseProgress = exercises
+        .map((exercise) => {
+              'name': exercise['name'],
+              'targetOutput': exercise['targetOutput'],
+              'type': exercise['type'],
+              'completed': false,
+              'userProgress': [],
+            })
+        .toList();
+  }
 
-      if (workoutData == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Invalid or expired workout code')),
-        );
-      } else {
-        // Navigate to collaborative workout details
-        context.push('/collaborativeWorkoutDetails', extra: {
-          'code': _codeController.text,
-          'workoutData': workoutData
-        });
+  Future<void> _updateExerciseProgress(int index) async {
+    setState(() {
+      _exerciseProgress[index]['userProgress'].add({
+        'userId': _auth.currentUser!.uid,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      if (_exerciseProgress[index]['userProgress'].length >= 1) {
+        _exerciseProgress[index]['completed'] = true;
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error validating code: $e')),
-      );
-    } finally {
-      setState(() { _isLoading = false; });
-    }
+    });
+
+    await _firestore
+        .collection('workout_sessions')
+        .doc(widget.workoutCode)
+        .collection('participant_progress')
+        .add({
+      'userId': _auth.currentUser!.uid,
+      'exerciseName': _exerciseProgress[index]['name'],
+      'timestamp': FieldValue.serverTimestamp(),
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Collaborative Workout'),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(18.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _codeController,
-              decoration: InputDecoration(
-                labelText: '6-Digit Workout Code',
-                border: OutlineInputBorder(),
-                counterText: '',
-              ),
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 24, letterSpacing: 10),
+      appBar: AppBar(title: Text('Collaborative Workout'),
+          leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+      onPressed: () => context.go('/workoutPlanSelection'),
+    ),),
+      body: Column(
+        children: [
+          SizedBox(height: 20),
+          Text(
+            "Workout Code: ${widget.workoutCode}",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 10),
+          QrImageView(
+            data: widget.workoutCode,
+            size: 200,
+          ),
+          SizedBox(height: 20),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _exerciseProgress.length,
+              itemBuilder: (context, index) {
+                final exercise = _exerciseProgress[index];
+                return Card(
+                  child: ListTile(
+                    title: Text(exercise['name']),
+                    subtitle: Text(
+                        "Target: ${exercise['targetOutput']} ${exercise['type']}"),
+                    trailing: exercise['completed']
+                        ? Icon(Icons.check_circle, color: Colors.green)
+                        : ElevatedButton(
+                            onPressed: () => _updateExerciseProgress(index),
+                            child: Text('Complete'),
+                          ),
+                  ),
+                );
+              },
             ),
-            SizedBox(height: 30),
-            _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : ElevatedButton(
-              onPressed: _validateAndProceed,
-              child: Text('Join Workout'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: Size(double.infinity, 50),
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Container(
-          width: double.infinity,
-          height: 80,
-          child: RecentPerformanceWidget(),
-        ),
+          ),
+        ],
       ),
     );
   }

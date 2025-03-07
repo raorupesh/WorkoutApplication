@@ -1,21 +1,23 @@
+import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:workoutpage/workout_details/workout_selection_page.dart';
+import 'firebase_options.dart';
 import 'group_workouts/collaborative_workout_page.dart';
 import 'group_workouts/competitive_workout_page.dart';
+import 'group_workouts/join_collaborative_workout_page.dart';
+import 'group_workouts/join_competitive_workout_page.dart';
 import 'models/workout_model.dart';
 import 'services/database_service.dart';
 import 'splash_screen.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
-import 'workout_details/workout_history_page.dart';
-import 'workout_details/join_workout_page.dart';
-import 'workout_details/workout_details_page.dart';
-import 'workout_details/standard_workout_recording_page.dart';
-import 'workout_details/download_workout_page.dart';
 import 'workout_details/download_workout_input_page.dart';
+import 'workout_details/download_workout_page.dart';
+import 'workout_details/join_workout_page.dart';
+import 'workout_details/standard_workout_recording_page.dart';
+import 'workout_details/workout_details_page.dart';
+import 'workout_details/workout_history_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +57,7 @@ class WorkoutProvider with ChangeNotifier {
   List<Workout> _downloadedPlans = [];
 
   List<Workout> get workouts => _workouts;
+
   List<Workout> get downloadedPlans => _downloadedPlans;
 
   Future<void> initProvider() async {
@@ -127,11 +130,31 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/collaborativeWorkoutCode',
-      builder: (context, state) => CollaborativeWorkoutCodePage(),
+      builder: (context, state) => JoinCollaborativeWorkoutCodePage(),
     ),
     GoRoute(
       path: '/competitiveWorkoutCode',
-      builder: (context, state) => CompetitiveWorkoutCodePage(),
+      builder: (context, state) => JoinCompetitiveWorkoutPage(),
+    ),
+    GoRoute(
+      path: '/competitiveWorkoutDetails',
+      builder: (context, state) {
+        final args = state.extra as Map<String, dynamic>;
+        return CompetitiveWorkoutDetailsPage(
+          workoutCode: args['code'],
+          workoutData: args['workoutData'],
+        );
+      },
+    ),
+    GoRoute(
+      path: '/collaborativeWorkoutDetails',
+      builder: (context, state) {
+        final args = state.extra as Map<String, dynamic>;
+        return CollaborativeWorkoutDetailsPage(
+          workoutCode: args['code'],
+          workoutData: args['workoutData'],
+        );
+      },
     ),
   ],
 );

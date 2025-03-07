@@ -8,12 +8,15 @@ import 'package:workoutpage/workout_details/workout_details_page.dart';
 
 void main() {
   group('WorkoutDetailsPage Tests', () {
-    testWidgets('Shows exercise details and completion status', (WidgetTester tester) async {
+    testWidgets('Shows exercise details and completion status',
+        (WidgetTester tester) async {
       final workout = Workout(
         workoutName: "Test Workout",
         date: DateTime.now().toString(),
         exercises: [Exercise(name: 'Push-up', type: 'Reps', targetOutput: 30)],
-        exerciseResults: [ExerciseResult(name: 'Push-up', type: 'Reps', achievedOutput: 35)],
+        exerciseResults: [
+          ExerciseResult(name: 'Push-up', type: 'Reps', achievedOutput: 35)
+        ],
       );
 
       await tester.pumpWidget(
@@ -32,7 +35,8 @@ void main() {
     });
   });
 
-  testWidgets('Numeric input widget allows user to change reps', (WidgetTester tester) async {
+  testWidgets('Numeric input widget allows user to change reps',
+      (WidgetTester tester) async {
     int selectedReps = 0;
 
     await tester.pumpWidget(
@@ -52,5 +56,4 @@ void main() {
     await tester.pump();
     expect(selectedReps, 1);
   });
-
 }

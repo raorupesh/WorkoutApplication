@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../main.dart';
 import '../models/workout_model.dart';
 import '../widgets/meters_input_widget.dart';
@@ -54,7 +55,8 @@ class _WorkoutRecordingPageState extends State<StandardWorkoutRecordingPage> {
       exerciseResults: exerciseResults,
     );
 
-    await Provider.of<WorkoutProvider>(context, listen: false).addWorkout(workout);
+    await Provider.of<WorkoutProvider>(context, listen: false)
+        .addWorkout(workout);
 
     // Navigate to WorkoutHistoryPage using go_router
     context.go('/workoutHistory');

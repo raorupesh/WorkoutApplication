@@ -10,7 +10,8 @@ import 'package:workoutpage/workout_details/standard_workout_recording_page.dart
 
 void main() {
   group('StandardWorkoutRecordingPage Tests', () {
-    testWidgets('Displays input fields for each exercise type', (WidgetTester tester) async {
+    testWidgets('Displays input fields for each exercise type',
+        (WidgetTester tester) async {
       // Mock workout data
       final mockWorkout = Workout(
         workoutName: "Test Workout",
@@ -44,7 +45,5 @@ void main() {
       expect(find.byType(MetersInputWidget), findsOneWidget);
       expect(find.byType(TimeInputWidget), findsOneWidget);
     });
-
   });
-
 }

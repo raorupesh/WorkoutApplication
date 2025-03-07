@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
+import '../main.dart';
 import '../models/workout_model.dart';
 import '../widgets/meters_input_widget.dart';
 import '../widgets/numeric_input_widget.dart';
-import '../widgets/time_input_widget.dart';
-import '../main.dart';
 import '../widgets/recent_performance_widget.dart';
+import '../widgets/time_input_widget.dart';
 
 class DownloadedWorkoutInputPage extends StatefulWidget {
   final Workout workoutPlan;
@@ -14,10 +15,12 @@ class DownloadedWorkoutInputPage extends StatefulWidget {
   DownloadedWorkoutInputPage({required this.workoutPlan});
 
   @override
-  _DownloadedWorkoutInputPageState createState() => _DownloadedWorkoutInputPageState();
+  _DownloadedWorkoutInputPageState createState() =>
+      _DownloadedWorkoutInputPageState();
 }
 
-class _DownloadedWorkoutInputPageState extends State<DownloadedWorkoutInputPage> {
+class _DownloadedWorkoutInputPageState
+    extends State<DownloadedWorkoutInputPage> {
   final Map<int, int> exerciseOutputs = {};
 
   void _saveWorkout() async {
@@ -38,7 +41,8 @@ class _DownloadedWorkoutInputPageState extends State<DownloadedWorkoutInputPage>
       exerciseResults: exerciseResults,
     );
 
-    await Provider.of<WorkoutProvider>(context, listen: false).addWorkout(workout);
+    await Provider.of<WorkoutProvider>(context, listen: false)
+        .addWorkout(workout);
 
     // Navigate to WorkoutHistoryPage using go_router
     context.go('/workoutHistory');

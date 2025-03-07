@@ -11,19 +11,29 @@ class Workout {
     this.exerciseResults = const [],
   });
 
+  /// Convert Workout instance to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'workoutName': workoutName,
+      'date': date,
+      'exercises': exercises.map((e) => e.toJson()).toList(),
+      'exerciseResults': exerciseResults.map((r) => r.toJson()).toList(),
+    };
+  }
+
   /// Factory method to create a Workout from JSON
   factory Workout.fromJson(Map<String, dynamic> json) {
     return Workout(
-      workoutName: json['name'] ?? "Unnamed Workout",
-      date: DateTime.now().toIso8601String(),
+      workoutName: json['workoutName'] ?? "Unnamed Workout",
+      date: json['date'] ?? DateTime.now().toIso8601String(),
       exercises: (json['exercises'] as List?)
-              ?.map((exercise) => Exercise.fromJson(exercise))
+              ?.map((e) => Exercise.fromJson(e))
               .toList() ??
           [],
       exerciseResults: (json['exerciseResults'] as List?)
-              ?.map((result) => ExerciseResult.fromJson(result))
+              ?.map((r) => ExerciseResult.fromJson(r))
               .toList() ??
-          [], // Parse exerciseResults if available
+          [],
     );
   }
 }
@@ -36,12 +46,21 @@ class Exercise {
   Exercise(
       {required this.name, required this.targetOutput, required this.type});
 
-  /// Factory method to create Exercise from JSON
+  /// Convert Exercise instance to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'targetOutput': targetOutput,
+      'type': type,
+    };
+  }
+
+  /// Create Exercise from JSON
   factory Exercise.fromJson(Map<String, dynamic> json) {
     return Exercise(
       name: json['name'] ?? "Unknown",
-      targetOutput: json['target'] ?? 0,
-      type: json['unit'] ?? "",
+      targetOutput: json['targetOutput'] ?? 0,
+      type: json['type'] ?? "",
     );
   }
 }
@@ -52,14 +71,23 @@ class ExerciseResult {
   final String type;
 
   ExerciseResult(
-      {required this.name, required this.achievedOutput, this.type = ""});
+      {required this.name, required this.achievedOutput, required this.type});
 
-  /// Factory method to create ExerciseResult from JSON
+  /// Convert ExerciseResult instance to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'achievedOutput': achievedOutput,
+      'type': type,
+    };
+  }
+
+  /// Create ExerciseResult from JSON
   factory ExerciseResult.fromJson(Map<String, dynamic> json) {
     return ExerciseResult(
       name: json['name'] ?? "Unknown",
-      achievedOutput: json['output'] ?? 0,
-      type: json.containsKey('type') ? json['type'] : json['unit'],
+      achievedOutput: json['achievedOutput'] ?? 0,
+      type: json['type'] ?? "",
     );
   }
 }

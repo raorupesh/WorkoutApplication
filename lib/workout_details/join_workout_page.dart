@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../widgets/recent_performance_widget.dart';
+
 class JoinWorkoutPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -19,26 +21,10 @@ class JoinWorkoutPage extends StatelessWidget {
               style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.teal[800]
-              ),
+                  color: Colors.teal[800]),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 30),
-
-            // Solo Workout Button
-            _buildModeButton(
-              context,
-              title: 'Solo Workout',
-              description: 'Practice alone at your own pace',
-              icon: Icons.person,
-              onPressed: () {
-                // Redirect to workout selection page
-                context.pop();
-                context.go('/workoutPlanSelection');
-              },
-            ),
-
-            SizedBox(height: 20),
 
             // Collaborative Workout Button
             _buildModeButton(
@@ -68,16 +54,24 @@ class JoinWorkoutPage extends StatelessWidget {
           ],
         ),
       ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Container(
+          width: double.infinity,
+          height: 80,
+          child: RecentPerformanceWidget(),
+        ),
+      ),
     );
   }
 
   Widget _buildModeButton(
-      BuildContext context, {
-        required String title,
-        required String description,
-        required IconData icon,
-        required VoidCallback onPressed,
-      }) {
+    BuildContext context, {
+    required String title,
+    required String description,
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
@@ -122,4 +116,3 @@ class JoinWorkoutPage extends StatelessWidget {
     );
   }
 }
-

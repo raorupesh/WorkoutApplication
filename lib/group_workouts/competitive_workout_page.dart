@@ -1,99 +1,93 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
-import '../firebase_validations/workout_code_validation.dart';
-import '../widgets/recent_performance_widget.dart'; // Assuming this is the import path
+class CompetitiveWorkoutDetailsPage extends StatelessWidget {
+  final String workoutCode;
+  final Map<String, dynamic> workoutData;
 
-class CompetitiveWorkoutCodePage extends StatefulWidget {
-  @override
-  _CompetitiveWorkoutCodePageState createState() => _CompetitiveWorkoutCodePageState();
-}
-
-class _CompetitiveWorkoutCodePageState extends State<CompetitiveWorkoutCodePage> {
-  final TextEditingController _codeController = TextEditingController();
-  final WorkoutCodeService _codeService = WorkoutCodeService();
-  bool _isLoading = false;
-
-  Future<void> _validateAndProceed() async {
-    if (_codeController.text.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter a valid 6-digit code')),
-      );
-      return;
-    }
-
-    setState(() { _isLoading = true; });
-
-    try {
-      final workoutData = await _codeService.validateWorkoutCode(
-          _codeController.text,
-          'competitive'
-      );
-
-      if (workoutData == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Invalid or expired workout code')),
-        );
-      } else {
-        // Navigate to competitive workout details
-        context.push('/competitiveWorkoutDetails', extra: {
-          'code': _codeController.text,
-          'workoutData': workoutData
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error validating code: $e')),
-      );
-    } finally {
-      setState(() { _isLoading = false; });
-    }
-  }
+  const CompetitiveWorkoutDetailsPage(
+      {Key? key, required this.workoutCode, required this.workoutData})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final exercises = workoutData['exercises'] as List<dynamic>;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Competitive Workout'),
         centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => context.go('/workoutPlanSelection'),
+        ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(18.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              controller: _codeController,
-              decoration: InputDecoration(
-                labelText: '6-Digit Workout Code',
-                border: OutlineInputBorder(),
-                counterText: '',
-              ),
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 24, letterSpacing: 10),
+            Text(
+              "Workout Code: $workoutCode",
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal),
             ),
-            SizedBox(height: 30),
-            _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : ElevatedButton(
-              onPressed: _validateAndProceed,
-              child: Text('Join Workout'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: Size(double.infinity, 50),
+            SizedBox(height: 10),
+            QrImageView(
+              data: workoutCode,
+              size: 180,
+              backgroundColor: Colors.white,
+              embeddedImageStyle: QrEmbeddedImageStyle(size: Size(60, 60)),
+            ),
+            SizedBox(height: 20),
+            Text(
+              "Share this code with others to compete!",
+              style: TextStyle(fontSize: 16, color: Colors.black54),
+            ),
+            SizedBox(height: 20),
+            Expanded(
+              child: ListView.builder(
+                itemCount: exercises.length,
+                itemBuilder: (context, index) {
+                  final exercise = exercises[index];
+                  return Card(
+                    elevation: 3,
+                    margin: EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    child: ListTile(
+                      title: Text(
+                        exercise['name'],
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal.shade800),
+                      ),
+                      subtitle: Text(
+                        "Target: ${exercise['targetOutput']} ${exercise['type']}",
+                        style: TextStyle(
+                            fontSize: 16, color: Colors.grey.shade700),
+                      ),
+                      trailing: ElevatedButton(
+                        onPressed: () {
+                          // TODO: Implement tracking progress logic
+                        },
+                        child: Text("Complete"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Container(
-          width: double.infinity,
-          height: 80,
-          child: RecentPerformanceWidget(),
         ),
       ),
     );
