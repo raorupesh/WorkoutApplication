@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../widgets/meters_input_widget.dart';
+import '../widgets/numeric_input_widget.dart';
+import '../widgets/time_input_widget.dart';
+
 class WorkoutDetailsBasePage extends StatefulWidget {
   final String workoutCode;
   final Map<String, dynamic> workoutData;
@@ -46,10 +50,44 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
   }
 
   Future<void> _initializeData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    // First, join the workout
     await _joinWorkout();
+
+    // For users who scan QR code, we need to fetch the complete workout data
+    if (widget.workoutData['exercises'] == null) {
+      try {
+        final workoutDoc = await _firestore
+            .collection('group_workouts')
+            .doc(widget.workoutCode)
+            .get();
+
+        if (workoutDoc.exists) {
+          // Update the workoutData with the complete data from Firestore
+          final Map<String, dynamic> serverData = workoutDoc.data() ?? {};
+
+          // This is a non-widget property update, so we can modify it directly
+          // but must cast to the correct type
+          (widget.workoutData as Map<String, dynamic>).addAll({
+            'exercises': serverData['exercises'] ?? [],
+            'description': serverData['description'] ?? '',
+            // Add any other fields you need
+          });
+        }
+      } catch (e) {
+        // Handle error
+        print('Error fetching workout data: $e');
+      }
+    }
+
+    // Now initialize exercise progress with complete data
     _initializeExerciseProgress();
     _startListeningToParticipants();
-    _startListeningToExerciseProgress(); // Add this line
+    _startListeningToExerciseProgress();
+
     setState(() {
       _isLoading = false;
     });
@@ -91,6 +129,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
       'type': exercise['unit'],
       'completed': false,
       'userProgress': [],
+      'userInput': 0, // Initialize with 0
     })
         .toList();
   }
@@ -197,27 +236,37 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
   }
 
   Future<void> _updateExerciseProgress(int index, int output) async {
-    String userId = _auth.currentUser!.uid;
-    String exerciseName = _exerciseProgress[index]['name'];
+    try {
+      String userId = _auth.currentUser!.uid;
+      String exerciseName = _exerciseProgress[index]['name'];
 
-    // For both competitive and collaborative workouts
-    await _firestore
-        .collection('group_workouts')
-        .doc(widget.workoutCode)
-        .collection('exercise_progress')
-        .doc(exerciseName)
-        .set({
-      'userId': userId,
-      'output': output,
-      'timestamp': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+      print("Updating exercise: $exerciseName with output: $output");
 
-    setState(() {
-      _exerciseProgress[index]['completed'] = true;
-    });
+      // For both competitive and collaborative workouts
+      await _firestore
+          .collection('group_workouts')
+          .doc(widget.workoutCode)
+          .collection('exercise_progress')
+          .doc(exerciseName)
+          .set({
+        'userId': userId,
+        'output': output,
+        'timestamp': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-    // Check if all exercises are completed
-    _checkWorkoutCompletion();
+      print("Firestore update successful");
+
+      setState(() {
+        _exerciseProgress[index]['completed'] = true;
+      });
+
+      // Check if all exercises are completed
+      _checkWorkoutCompletion();
+    } catch (e) {
+      print("Error in _updateExerciseProgress: $e");
+      // Re-throw to be caught by the caller
+      throw e;
+    }
   }
 
 
@@ -514,167 +563,323 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
   }
 
   Widget _buildExercisesList(Color themeColor) {
-    return ListView.builder(
-      padding: EdgeInsets.all(16),
-      itemCount: _exerciseProgress.length,
-      itemBuilder: (context, index) {
-        final exercise = _exerciseProgress[index];
-        final isCompleted = exercise['completed'] == true;
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            padding: EdgeInsets.all(16),
+            itemCount: _exerciseProgress.length,
+            itemBuilder: (context, index) {
+              final exercise = _exerciseProgress[index];
+              final isCompleted = exercise['completed'] == true;
+              final exerciseType = exercise['type'] as String; // 'reps', 'seconds', or 'meters'
 
-        return AnimatedBuilder(
-          animation: _animController,
-          builder: (context, child) {
-            final delay = (index + 3) * 0.2;
-            final curvedAnimation = CurvedAnimation(
-              parent: _animController,
-              curve: Interval(
-                delay < 1.0 ? delay : 0.9,
-                1.0,
-                curve: Curves.easeOut,
-              ),
-            );
+              return AnimatedBuilder(
+                animation: _animController,
+                builder: (context, child) {
+                  final delay = (index + 3) * 0.2;
+                  final curvedAnimation = CurvedAnimation(
+                    parent: _animController,
+                    curve: Interval(
+                      delay < 1.0 ? delay : 0.9,
+                      1.0,
+                      curve: Curves.easeOut,
+                    ),
+                  );
 
-            return SlideTransition(
-              position: Tween<Offset>(
-                begin: Offset(1.0, 0.0),
-                end: Offset.zero,
-              ).animate(curvedAnimation),
-              child: FadeTransition(
-                opacity: curvedAnimation,
-                child: child,
-              ),
-            );
-          },
-          child: Card(
-            margin: EdgeInsets.only(bottom: 12),
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: isCompleted
-                    ? Colors.green.withOpacity(0.5)
-                    : Colors.grey.withOpacity(0.2),
-                width: isCompleted ? 2 : 1,
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: isCompleted
-                              ? Colors.green.withOpacity(0.1)
-                              : themeColor.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _getExerciseIcon(exercise['name']),
-                          color: isCompleted ? Colors.green : themeColor,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
+                  return SlideTransition(
+                    position: Tween<Offset>(
+                      begin: Offset(1.0, 0.0),
+                      end: Offset.zero,
+                    ).animate(curvedAnimation),
+                    child: FadeTransition(
+                      opacity: curvedAnimation,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Card(
+                  margin: EdgeInsets.only(bottom: 12),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: isCompleted
+                          ? Colors.green.withOpacity(0.5)
+                          : Colors.grey.withOpacity(0.2),
+                      width: isCompleted ? 2 : 1,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              exercise['name'],
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                            Container(
+                              padding: EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isCompleted
+                                    ? Colors.green.withOpacity(0.1)
+                                    : themeColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _getExerciseIcon(exercise['name']),
+                                color: isCompleted ? Colors.green : themeColor,
                               ),
                             ),
-                            SizedBox(height: 4),
-                            _buildTargetProgressBar(
-                              exercise,
-                              isCompleted,
-                              themeColor,
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  widget.isCompetitive
-                                      ? Icons.emoji_events
-                                      : Icons.group_work,
-                                  size: 16,
-                                  color: widget.isCompetitive
-                                      ? Colors.orange
-                                      : Colors.green,
-                                ),
-                                SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    widget.isCompetitive
-                                        ? "Competitive - Beat your personal best!"
-                                        : "Collaborative - Work together to reach the target!",
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    exercise['name'],
                                     style: TextStyle(
-                                      fontStyle: FontStyle.italic,
-                                      color: widget.isCompetitive
-                                          ? Colors.orange
-                                          : Colors.green,
-                                      fontSize: 12,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ),
-                              ],
+                                  SizedBox(height: 4),
+                                  _buildTargetProgressBar(
+                                    exercise,
+                                    isCompleted,
+                                    themeColor,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        widget.isCompetitive
+                                            ? Icons.emoji_events
+                                            : Icons.group_work,
+                                        size: 16,
+                                        color: widget.isCompetitive
+                                            ? Colors.orange
+                                            : Colors.green,
+                                      ),
+                                      SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          widget.isCompetitive
+                                              ? "Competitive - Beat your personal best!"
+                                              : "Collaborative - Work together to reach the target!",
+                                          style: TextStyle(
+                                            fontStyle: FontStyle.italic,
+                                            color: widget.isCompetitive
+                                                ? Colors.orange
+                                                : Colors.green,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (isCompleted)
-                        Chip(
-                          label: Text('Completed'),
-                          avatar: Icon(
-                            Icons.check_circle,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          backgroundColor: Colors.green,
-                          labelStyle: TextStyle(color: Colors.white),
-                        )
-                      else
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            int output = await _showInputDialog(
-                                context, exercise['type']);
-                            if (output > 0) {
-                              await _updateExerciseProgress(index, output);
-                            }
-                          },
-                          icon: Icon(Icons.add_task, size: 18),
-                          label: Text('Submit Result'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: themeColor,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                        SizedBox(height: 12),
+                        if (isCompleted)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Chip(
+                              label: Text('Completed'),
+                              avatar: Icon(
+                                Icons.check_circle,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              backgroundColor: Colors.green,
+                              labelStyle: TextStyle(color: Colors.white),
                             ),
-                            elevation: 0,
-                          ),
-                        ),
-                    ],
+                          )
+                        else
+                        // Input widget based on exercise type
+                          _buildInputWidgetByType(exerciseType, index, themeColor),
+                      ],
+                    ),
                   ),
-                ],
+                ),
+              );
+            },
+          ),
+        ),
+        // Single submit button at the bottom
+        if (!_isFinished)
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 5,
+                  offset: Offset(0, -2),
+                ),
+              ],
+            ),
+            child: ElevatedButton.icon(
+              onPressed: _submitAllExercises,
+              icon: Icon(Icons.save, size: 20),
+              label: Text(
+                'SUBMIT ALL RESULTS',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: themeColor,
+                foregroundColor: Colors.white,
+                minimumSize: Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
               ),
             ),
           ),
-        );
-      },
+      ],
     );
   }
+
+// Helper method to build the appropriate input widget based on exercise type
+  Widget _buildInputWidgetByType(String type, int index, Color themeColor) {
+    // Initialize with 0 if not set
+    _exerciseProgress[index]['userInput'] ??= 0;
+
+    // Update function to store the input value in the exercise progress
+    void updateInput(int value) {
+      setState(() {
+        _exerciseProgress[index]['userInput'] = value;
+      });
+    }
+
+    // Return the appropriate widget based on type
+    switch (type.toLowerCase()) {
+      case 'reps':
+        return NumericInputWidget(
+          label: 'Reps',
+          initialValue: _exerciseProgress[index]['userInput'],
+          onInputChanged: updateInput,
+          key: ValueKey('reps_input_$index'),
+        );
+
+      case 'seconds':
+        return TimeInputWidget(
+          initialValue: _exerciseProgress[index]['userInput'],
+          onInputChanged: updateInput,
+          key: ValueKey('time_input_$index'),
+        );
+
+      case 'meters':
+        return Container(
+          margin: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+          child: MetersInputWidget(
+            onInputChanged: updateInput,
+            key: ValueKey('meters_input_$index'),
+          ),
+        );
+
+      default:
+      // Fallback to numeric input for unknown types
+        return NumericInputWidget(
+          label: type,
+          initialValue: _exerciseProgress[index]['userInput'],
+          onInputChanged: updateInput,
+          key: ValueKey('numeric_input_$index'),
+        );
+    }
+  }
+
+// Method to submit all exercise results at once
+  Future<void> _submitAllExercises() async {
+    bool hasInvalidInputs = false;
+    List<int> invalidExerciseIndices = [];
+
+    // Validate all inputs first
+    for (int i = 0; i < _exerciseProgress.length; i++) {
+      if (_exerciseProgress[i]['completed'] == true) continue; // Skip already completed exercises
+
+      final userInput = _exerciseProgress[i]['userInput'] ?? 0;
+      if (userInput <= 0) {
+        invalidExerciseIndices.add(i);
+        hasInvalidInputs = true;
+      }
+    }
+
+    if (hasInvalidInputs) {
+      // Show error for missing inputs
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter values for all exercises'),
+          backgroundColor: Colors.red,
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      // Scroll to the first invalid input
+      if (invalidExerciseIndices.isNotEmpty) {
+        // You would need to implement scrolling to the specific item
+        // This is a placeholder for that functionality
+      }
+
+      return;
+    }
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: CircularProgressIndicator(
+          color: widget.isCompetitive ? Colors.orange : Colors.teal,
+        ),
+      ),
+    );
+
+    try {
+      // Submit all exercises data
+      for (int i = 0; i < _exerciseProgress.length; i++) {
+        if (_exerciseProgress[i]['completed'] == true) continue; // Skip already completed exercises
+
+        final output = _exerciseProgress[i]['userInput'];
+        await _updateExerciseProgress(i, output);
+      }
+
+      // Close loading dialog
+      Navigator.pop(context);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('All results submitted successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      // Close loading dialog
+      Navigator.pop(context);
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error submitting results: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
 
   IconData _getExerciseIcon(String exerciseName) {
     final name = exerciseName.toLowerCase();
