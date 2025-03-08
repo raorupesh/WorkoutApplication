@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-
 import '../widgets/meters_input_widget.dart';
 import '../widgets/numeric_input_widget.dart';
 import '../widgets/time_input_widget.dart';
@@ -34,9 +33,15 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
   bool _isFinished = false;
   late AnimationController _animController;
 
+  // New: Create a local copy of workout data that we can modify
+  late Map<String, dynamic> _localWorkoutData;
+
   @override
   void initState() {
     super.initState();
+    // Initialize local copy
+    _localWorkoutData = Map<String, dynamic>.from(widget.workoutData);
+
     _animController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 500),
@@ -55,11 +60,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
       _isLoading = true;
     });
 
-    // First, join the workout
-    await _joinWorkout();
-
     // For users who scan QR code, we need to fetch the complete workout data
-    if (widget.workoutData['exercises'] == null) {
+    if (_localWorkoutData['exercises'] == null) {
       try {
         final workoutDoc = await _firestore
             .collection('group_workouts')
@@ -67,24 +69,49 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
             .get();
 
         if (workoutDoc.exists) {
-          // Update the workoutData with the complete data from Firestore
           final Map<String, dynamic> serverData = workoutDoc.data() ?? {};
 
-          // This is a non-widget property update, so we can modify it directly
-          // but must cast to the correct type
-          (widget.workoutData as Map<String, dynamic>).addAll({
-            'exercises': serverData['exercises'] ?? [],
-            'description': serverData['description'] ?? '',
-            // Add any other fields you need
+          // Update our local copy with server data
+          setState(() {
+            _localWorkoutData = {
+              ..._localWorkoutData,
+              'exercises': serverData['exercises'] ?? [],
+              'description': serverData['description'] ?? '',
+              // Add any other fields you need
+            };
           });
+        } else {
+          // Handle case where document doesn't exist
+          print('Workout document does not exist');
+          // Show error message to user
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Workout not found. Invalid code.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          // Navigate back
+          Future.delayed(Duration(seconds: 2), () {
+            context.go('/workoutPlanSelection');
+          });
+          return;
         }
       } catch (e) {
-        // Handle error
         print('Error fetching workout data: $e');
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading workout: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
 
-    // Now initialize exercise progress with complete data
+    // Now that we have all data, join the workout
+    await _joinWorkout();
+
+    // Initialize exercise progress with the complete data
     _initializeExerciseProgress();
     _startListeningToParticipants();
     _startListeningToExerciseProgress();
@@ -122,16 +149,34 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
   }
 
   void _initializeExerciseProgress() {
-    final exercises = widget.workoutData['exercises'] as List<dynamic>;
+    // Make sure exercises exists and is a list before proceeding
+    if (_localWorkoutData['exercises'] == null ||
+        !(_localWorkoutData['exercises'] is List)) {
+      print('Exercise data is missing or invalid');
+      setState(() {
+        _exerciseProgress = []; // Initialize as empty if no valid data
+      });
+      return;
+    }
+
+    final exercises = _localWorkoutData['exercises'] as List<dynamic>;
+
+    // Debug: Print the first exercise to see its structure
+    if (exercises.isNotEmpty) {
+      print('First exercise structure:');
+      print(exercises[0]);
+    }
+
     _exerciseProgress = exercises
         .map((exercise) => {
-              'name': exercise['name'],
-              'targetOutput': exercise['target'],
-              'type': exercise['unit'],
-              'completed': false,
-              'userProgress': [],
-              'userInput': 0, // Initialize with 0
-            })
+      'name': exercise['name'] ?? 'Unknown Exercise',
+      'targetOutput': exercise['target'] ?? 0,
+      // Try different possible field names for the unit/type
+      'type': exercise['unit'] ?? exercise['type'] ?? exercise['exerciseType'] ?? 'reps',
+      'completed': false,
+      'userProgress': [],
+      'userInput': 0,
+    })
         .toList();
   }
 
@@ -164,7 +209,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
   void _checkWorkoutCompletion() {
     // For the current user only
     final allCompleted =
-        _exerciseProgress.every((exercise) => exercise['completed'] == true);
+    _exerciseProgress.every((exercise) => exercise['completed'] == true);
     if (allCompleted && !_isFinished) {
       setState(() {
         _isFinished = true;
@@ -195,9 +240,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
           children: [
             Icon(
               Icons.check_circle_outline,
-              // Or Icons.check_circle, Icons.done, etc.
               size: 100,
-              color: Colors.green, // Or another appropriate color
+              color: Colors.green,
             ),
             SizedBox(height: 15),
             Text(
@@ -226,12 +270,12 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     if (widget.isCompetitive) {
       router.go('/competitiveWorkoutResults', extra: {
         'code': widget.workoutCode,
-        'workoutData': widget.workoutData,
+        'workoutData': _localWorkoutData, // Use local copy
       });
     } else {
       router.go('/collaborativeWorkoutResults', extra: {
         'code': widget.workoutCode,
-        'workoutData': widget.workoutData,
+        'workoutData': _localWorkoutData, // Use local copy
       });
     }
   }
@@ -240,8 +284,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     try {
       String userId = _auth.currentUser!.uid;
       String exerciseName = _exerciseProgress[index]['name'];
-
-      print("Updating exercise: $exerciseName with output: $output");
 
       // For both competitive and collaborative workouts
       await _firestore
@@ -255,8 +297,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
         'timestamp': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      print("Firestore update successful");
-
       setState(() {
         _exerciseProgress[index]['completed'] = true;
       });
@@ -264,8 +304,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
       // Check if all exercises are completed
       _checkWorkoutCompletion();
     } catch (e) {
-      print("Error in _updateExerciseProgress: $e");
-      // Re-throw to be caught by the caller
       throw e;
     }
   }
@@ -300,34 +338,34 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: themeColor))
           : Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    themeColor.withOpacity(0.2),
-                    Colors.white,
-                  ],
-                ),
-              ),
-              child: Column(
-                children: [
-                  _buildWorkoutInfoHeader(),
-                  _buildInviteSection(themeColor),
-                  _buildParticipantsSection(themeColor),
-                  Expanded(
-                    child: _buildExercisesList(themeColor),
-                  ),
-                ],
-              ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              themeColor.withOpacity(0.2),
+              Colors.white,
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            _buildWorkoutInfoHeader(),
+            _buildInviteSection(themeColor),
+            _buildParticipantsSection(themeColor),
+            Expanded(
+              child: _buildExercisesList(themeColor),
             ),
+          ],
+        ),
+      ),
       floatingActionButton: _isFinished
           ? FloatingActionButton.extended(
-              onPressed: _navigateToResults,
-              icon: Icon(Icons.leaderboard),
-              label: Text('Results'),
-              backgroundColor: themeColor,
-            )
+        onPressed: _navigateToResults,
+        icon: Icon(Icons.leaderboard),
+        label: Text('Results'),
+        backgroundColor: themeColor,
+      )
           : null,
     );
   }
@@ -337,11 +375,11 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
       padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         children: [
-          if (widget.workoutData['description'] != null)
+          if (_localWorkoutData['description'] != null)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Text(
-                widget.workoutData['description'],
+                _localWorkoutData['description'].toString(),
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey.shade700,
@@ -508,7 +546,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                 child: Row(
                   children: List.generate(
                     _participants.length,
-                    (index) => Padding(
+                        (index) => Padding(
                       padding: EdgeInsets.only(right: 12),
                       child: Column(
                         children: [
@@ -575,7 +613,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
               final exercise = _exerciseProgress[index];
               final isCompleted = exercise['completed'] == true;
               final exerciseType =
-                  exercise['type'] as String; // 'reps', 'seconds', or 'meters'
+              exercise['type'] as String; // 'reps', 'seconds', or 'meters'
 
               return AnimatedBuilder(
                 animation: _animController,
@@ -702,7 +740,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                             ),
                           )
                         else
-                          // Input widget based on exercise type
+                        // Input widget based on exercise type
                           _buildInputWidgetByType(
                               exerciseType, index, themeColor),
                       ],
@@ -752,7 +790,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     );
   }
 
-// Helper method to build the appropriate input widget based on exercise type
+  // Helper method to build the appropriate input widget based on exercise type
   Widget _buildInputWidgetByType(String type, int index, Color themeColor) {
     // Initialize with 0 if not set
     _exerciseProgress[index]['userInput'] ??= 0;
@@ -791,7 +829,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
         );
 
       default:
-        // Fallback to numeric input for unknown types
+      // Fallback to numeric input for unknown types
         return NumericInputWidget(
           label: type,
           initialValue: _exerciseProgress[index]['userInput'],
@@ -801,7 +839,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     }
   }
 
-// Method to submit all exercise results at once
+  // Method to submit all exercise results at once
   Future<void> _submitAllExercises() async {
     bool hasInvalidInputs = false;
     List<int> invalidExerciseIndices = [];
@@ -940,79 +978,5 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
         ),
       ],
     );
-  }
-
-  Future<int> _showInputDialog(BuildContext context, String type) async {
-    int input = 0;
-    final themeColor = widget.isCompetitive ? Colors.orange : Colors.teal;
-
-    return await showDialog<int>(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: Row(
-                children: [
-                  Icon(Icons.fitness_center, color: themeColor, size: 24),
-                  SizedBox(width: 10),
-                  Text("Record Your Result"),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "How many $type did you complete?",
-                    style: TextStyle(color: Colors.grey.shade700),
-                  ),
-                  SizedBox(height: 20),
-                  TextField(
-                    keyboardType: TextInputType.number,
-                    onChanged: (value) => input = int.tryParse(value) ?? 0,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.grey.shade100,
-                      suffix: Text(type),
-                      hintText: "Enter amount",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: themeColor, width: 2),
-                      ),
-                    ),
-                    style: TextStyle(fontSize: 18),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, 0),
-                  child: Text(
-                    "Cancel",
-                    style: TextStyle(color: Colors.grey.shade700),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context, input),
-                  child: Text("Submit"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: themeColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ) ??
-        0;
   }
 }
