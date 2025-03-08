@@ -18,9 +18,16 @@ class DownloadedWorkoutInputPage extends StatefulWidget {
       _DownloadedWorkoutInputPageState();
 }
 
-class _DownloadedWorkoutInputPageState
-    extends State<DownloadedWorkoutInputPage> {
+class _DownloadedWorkoutInputPageState extends State<DownloadedWorkoutInputPage> {
   final Map<int, int> exerciseOutputs = {};
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Debugging: Print received workout data
+    print("Received Workout Data: ${widget.workoutPlan.toJson()}");
+  }
 
   void _saveWorkout() async {
     final exerciseResults = widget.workoutPlan.exercises.map((exercise) {
@@ -42,13 +49,12 @@ class _DownloadedWorkoutInputPageState
 
     await Provider.of<WorkoutProvider>(context, listen: false).addWorkout(workout);
 
-    // Verify that workout is saved in the database
+    // Debug: Ensure workout is saved
     print("Workout saved: ${workout.workoutName}");
 
-    // Navigate to WorkoutHistoryPage using go_router
+    // Navigate to WorkoutHistoryPage
     context.go('/workoutHistory');
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -56,10 +62,7 @@ class _DownloadedWorkoutInputPageState
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            // Navigate back to the previous screen
-            context.go('/workoutPlanSelection');
-          },
+          onPressed: () => context.go('/workoutPlanSelection'),
         ),
         title: Text(widget.workoutPlan.workoutName),
         centerTitle: true,
