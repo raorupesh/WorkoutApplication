@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // only if needed
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -16,17 +18,119 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  List<Workout> _firebaseCollaborative = [];
+  List<Workout> _firebaseCompetitive = [];
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    _fetchGroupWorkouts();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+
+  Future<void> _fetchGroupWorkouts() async {
+    try {
+      final query =
+      await FirebaseFirestore.instance.collection('group_workouts').get();
+
+      final List<Workout> collab = [];
+      final List<Workout> comp = [];
+
+      // Identify the current user for fetching that user's subcollection docs
+      final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+      for (var doc in query.docs) {
+        final data = doc.data();
+        final docRef = doc.reference;
+
+        // 'collaborative' or 'competitive'
+        final type = data['workoutType'] ?? '';
+        // Optional: Some group docs might have 'workoutName' or not
+        final workoutName = data['workoutName'] ?? 'Group Workout';
+
+        // Convert Firestore Timestamp -> String date
+        final createdAt = data['createdAt'] as Timestamp?;
+        final dateString = (createdAt != null)
+            ? createdAt.toDate().toIso8601String()
+            : DateTime.now().toIso8601String();
+
+        // Parse the top-level exercises array
+        final exercises = data['exercises'] as List<dynamic>? ?? [];
+        final List<Exercise> exerciseList = exercises.map((e) {
+          final name = e['name'] ?? 'Unnamed';
+          final target = e['target'] ?? e['targetOutput'] ?? 0;
+          final unit = e['unit'] ?? e['type'] ?? 'reps';
+          return Exercise(name: name, targetOutput: target, type: unit);
+        }).toList();
+
+        // Now build up the user’s exerciseResults from Firestore
+        final List<ExerciseResult> userResults = [];
+
+        // For each exercise, see if the current user recorded an output
+        for (var ex in exerciseList) {
+          final exerciseName = ex.name;
+
+          // Pull the doc in subcollection: /exercise_progress/{exerciseName}/participants/{userId}
+          final participantDoc = await docRef
+              .collection('exercise_progress')
+              .doc(exerciseName)
+              .collection('participants')
+              .doc(userId)
+              .get();
+
+          if (participantDoc.exists) {
+            final participantData = participantDoc.data() ?? {};
+            final output = participantData['output'] ?? 0;
+
+            // Build an ExerciseResult for the current user
+            userResults.add(
+              ExerciseResult(
+                name: exerciseName,
+                achievedOutput: output,
+                type: ex.type, // re-use the same unit from the exercise itself
+              ),
+            );
+          } else {
+            // If no doc exists for that user, the user hasn’t recorded anything for that exercise
+            userResults.add(
+              ExerciseResult(
+                name: exerciseName,
+                achievedOutput: 0,
+                type: ex.type,
+              ),
+            );
+          }
+        }
+
+        // Build a Workout that includes the user’s results
+        final workout = Workout(
+          workoutName: workoutName,
+          date: dateString,
+          exercises: exerciseList,
+          exerciseResults: userResults,
+          type: type, // "collaborative" or "competitive"
+        );
+
+        // Store this workout in the correct list
+        if (type == 'competitive') {
+          comp.add(workout);
+        } else if (type == 'collaborative') {
+          collab.add(workout);
+        }
+      }
+
+      // Update state with all fetched workouts
+      setState(() {
+        _firebaseCollaborative = collab;
+        _firebaseCompetitive = comp;
+      });
+    } catch (e) {
+      print("Error fetching group workouts: $e");
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -81,14 +185,22 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
             child: TabBarView(
               controller: _tabController,
               children: [
-                // Solo Workouts Tab
-                WorkoutHistoryTabContent(workoutType: 'solo'),
+                // Solo Workouts -> still from local DB if you want
+                WorkoutHistoryTabContent(
+                  workoutType: 'solo',
+                ),
 
-                // Competitive Workouts Tab
-                WorkoutHistoryTabContent(workoutType: 'competitive'),
+                // Competitive (fresh from Firebase)
+                WorkoutHistoryTabContent(
+                  workoutType: 'competitive',
+                  firebaseWorkouts: _firebaseCompetitive,
+                ),
 
-                // Collaborative Workouts Tab
-                WorkoutHistoryTabContent(workoutType: 'collaborative'),
+                // Collaborative (fresh from Firebase)
+                WorkoutHistoryTabContent(
+                  workoutType: 'collaborative',
+                  firebaseWorkouts: _firebaseCollaborative,
+                ),
               ],
             ),
           ),
@@ -104,11 +216,12 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
           ),
         ],
       ),
+
+      // Floating Action Buttons remain as you had them
       floatingActionButton: _buildFloatingActions(context),
     );
   }
 
-  /// Build Floating Action Buttons
   Widget _buildFloatingActions(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -138,43 +251,50 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
   }
 }
 
+
 class WorkoutHistoryTabContent extends StatelessWidget {
   final String workoutType;
+
+  final List<Workout> firebaseWorkouts;
 
   const WorkoutHistoryTabContent({
     Key? key,
     required this.workoutType,
+    this.firebaseWorkouts = const [],
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final workoutProvider = Provider.of<WorkoutProvider>(context);
-    final workouts = workoutProvider.workouts.where((workout) {
-      // Filter workouts based on type
-      // Note: You'll need to add a 'type' field to your Workout model
-      return workout.type == workoutType;
-    }).toList();
+    // If this is "solo," we'll fetch from local DB.
+    // Otherwise, we rely on firebaseWorkouts.
+    List<Workout> workouts;
+    if (workoutType == 'solo') {
+      final workoutProvider = Provider.of<WorkoutProvider>(context);
+      workouts = workoutProvider.workouts
+          .where((w) => w.type == 'solo')
+          .toList();
+    } else {
+      workouts = firebaseWorkouts;
+    }
 
-    // Sort workouts by date (newest first)
     workouts.sort(
-        (a, b) => DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
+          (a, b) => DateTime.parse(b.date).compareTo(DateTime.parse(a.date)),
+    );
 
-    // Debugging
-    print("$workoutType Workouts: ${workouts.map((w) => w.toJson()).toList()}");
+    if (workouts.isEmpty) {
+      return _buildEmptyState(workoutType);
+    }
 
-    return workouts.isEmpty
-        ? _buildEmptyState(workoutType)
-        : ListView.builder(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            itemCount: workouts.length,
-            itemBuilder: (context, index) {
-              final workout = workouts[index];
-              return _buildWorkoutCard(context, workout);
-            },
-          );
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      itemCount: workouts.length,
+      itemBuilder: (context, index) {
+        final workout = workouts[index];
+        return _buildWorkoutCard(context, workout);
+      },
+    );
   }
 
-  /// Build Empty State when no workouts are available
   Widget _buildEmptyState(String type) {
     String message;
     IconData icon;
@@ -208,12 +328,14 @@ class WorkoutHistoryTabContent extends StatelessWidget {
     );
   }
 
-  /// Build Individual Workout Card
+
   Widget _buildWorkoutCard(BuildContext context, Workout workout) {
+
     final completedExercises = workout.exerciseResults.where((result) {
       final matchingExercise = workout.exercises.firstWhere(
-          (e) => e.name == result.name,
-          orElse: () => Exercise(name: '', targetOutput: 0, type: ''));
+            (e) => e.name == result.name,
+        orElse: () => Exercise(name: '', targetOutput: 0, type: ''),
+      );
       return result.achievedOutput >= matchingExercise.targetOutput;
     }).length;
 

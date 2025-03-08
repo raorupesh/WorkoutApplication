@@ -2,8 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart'; // <-- Make sure to have this
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../main.dart'; // <-- So we can access WorkoutProvider
+import '../models/workout_model.dart';
 import '../widgets/meters_input_widget.dart';
 import '../widgets/numeric_input_widget.dart';
 import '../widgets/time_input_widget.dart';
@@ -29,21 +32,12 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// Each exercise is stored as a map:
-  ///   {
-  ///     'name': <String>,
-  ///     'targetOutput': <int>,
-  ///     'type': <String>,
-  ///     'completed': <bool>,
-  ///     'userInput': <int>
-  ///   }
   List<Map<String, dynamic>> _exerciseProgress = [];
   List<String> _participants = [];
   bool _isLoading = true;
   bool _isFinished = false;
 
   late Map<String, dynamic> _localWorkoutData;
-
   late AnimationController _animController;
 
   @override
@@ -63,12 +57,10 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     super.dispose();
   }
 
-  /// Fetch or fill in the workout data (in case user scanned code)
-  /// Then join the workout, set up the progress watchers
   Future<void> _initializeData() async {
     setState(() => _isLoading = true);
 
-    // If user scanned a code, we might not have the full "exercises" array
+    // If no exercises locally, try to load them from Firestore
     if (_localWorkoutData['exercises'] == null) {
       try {
         final docSnap = await _firestore
@@ -76,13 +68,11 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
             .doc(widget.workoutCode)
             .get();
         if (!docSnap.exists) {
-          // No valid workout doc
           _showErrorAndGoBack("Workout does not exist or has been removed.");
           return;
         }
 
         final serverData = docSnap.data() ?? {};
-        // Merge into local
         _localWorkoutData['exercises'] = serverData['exercises'] ?? [];
         _localWorkoutData['description'] = serverData['description'] ?? '';
       } catch (e) {
@@ -91,10 +81,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
       }
     }
 
-    // Now that we have data, join the participants
     await _joinWorkout();
-
-    // Prepare local exerciseProgress
     _initializeExerciseProgress();
     _startListeningToParticipants();
     _startListeningToExerciseUpdates();
@@ -137,12 +124,11 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
         'targetOutput': exercise['target'] ?? exercise['targetOutput'] ?? 0,
         'type': exercise['unit'] ?? exercise['type'] ?? 'reps',
         'completed': false,
-        'userInput': 0, // The user’s local input
+        'userInput': 0, // local user input
       };
     }).toList();
   }
 
-  /// Start listening for changes in the "participants" array
   void _startListeningToParticipants() {
     _firestore
         .collection('group_workouts')
@@ -157,12 +143,10 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     });
   }
 
-  /// For each exercise, see if the user has submitted
   void _startListeningToExerciseUpdates() {
     for (int i = 0; i < _exerciseProgress.length; i++) {
       final exerciseName = _exerciseProgress[i]['name'];
 
-      // We track if the user has completed it in the subcollection
       _firestore
           .collection('group_workouts')
           .doc(widget.workoutCode)
@@ -173,14 +157,11 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
           .snapshots()
           .listen((docSnap) {
         if (docSnap.exists) {
-          // If we see data for this user, mark completed
           final data = docSnap.data() ?? {};
           setState(() {
             _exerciseProgress[i]['completed'] = true;
             _exerciseProgress[i]['userInput'] = data['output'] ?? 0;
           });
-
-          // Then see if everything is done
           _checkAllDone();
         }
       });
@@ -188,47 +169,17 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
   }
 
   void _checkAllDone() {
-    // For the current user
     final all = _exerciseProgress.every((ex) => ex['completed'] == true);
     if (all && !_isFinished) {
       setState(() => _isFinished = true);
-      _showCompletionDialog();
     }
   }
 
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(Icons.emoji_events, color: Colors.amber, size: 28),
-            SizedBox(width: 10),
-            Text('Workout Completed!'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _navigateToResults();
-            },
-            child: Text('View Results', style: TextStyle(fontSize: 16)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Submits the entire set of exercises in one go
+  /// Called when the user taps "SUBMIT ALL RESULTS"
   Future<void> _submitAllExercises() async {
-    // Validate userInput for each exercise
+    // Make sure each exercise has an input > 0
     for (final ex in _exerciseProgress) {
-      if (ex['completed'] == true) continue; // skip already-submitted
-
-      // Check if userInput is > 0
+      if (ex['completed'] == true) continue;
       if ((ex['userInput'] ?? 0) <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -252,33 +203,64 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     );
 
     try {
+      // Save each exercise result in Firestore
       for (int i = 0; i < _exerciseProgress.length; i++) {
         final ex = _exerciseProgress[i];
-        if (ex['completed'] == true) continue; // skip
+        if (ex['completed'] == true) continue; // skip if already done
 
         final int output = ex['userInput'];
         await _updateSingleExerciseProgress(i, output);
       }
 
-      Navigator.pop(context); // Close the loading dialog
-
-      // If everything is done by now, show success
-      bool allDone = _exerciseProgress.every((ex) => ex['completed'] == true);
-      if (allDone) {
-        setState(() => _isFinished = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('All results submitted successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // Go to results
-        Future.delayed(Duration(seconds: 1), () {
-          _navigateToResults();
-        });
+      // Close the loading dialog
+      if (mounted) {
+        Navigator.pop(context);
       }
+
+      setState(() => _isFinished = true);
+
+      // --------------------------------------------------
+      // IMPORTANT ADDITION: Save local copy so that
+      // collaborative/competitive workouts appear in
+      // WorkoutHistoryPage's respective tab.
+      // --------------------------------------------------
+      try {
+        final localWorkout = Workout(
+          workoutName: _localWorkoutData["workoutName"] ??
+              (widget.isCompetitive
+                  ? "Competitive Workout"
+                  : "Collaborative Workout"),
+          date: DateTime.now().toIso8601String(),
+          exercises: _exerciseProgress.map((ex) {
+            return Exercise(
+              name: ex['name'],
+              targetOutput: ex['targetOutput'],
+              type: ex['type'],
+            );
+          }).toList(),
+          exerciseResults: _exerciseProgress.map((ex) {
+            return ExerciseResult(
+              name: ex['name'],
+              achievedOutput: ex['userInput'],
+              type: ex['type'],
+            );
+          }).toList(),
+          type: widget.isCompetitive ? 'competitive' : 'collaborative',
+        );
+
+        // This ensures the local DB sees it as collaborative or competitive.
+        await Provider.of<WorkoutProvider>(context, listen: false)
+            .addWorkout(localWorkout);
+      } catch (e) {
+        print("Error saving local copy of group workout: $e");
+      }
+
+      // Now go to the group results screen
+      _navigateToResults();
     } catch (e) {
-      Navigator.pop(context); // close loading
+      // Close the loading indicator
+      if (mounted) Navigator.pop(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error submitting results: $e'),
@@ -288,7 +270,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     }
   }
 
-  /// Submits a single exercise result to the Firestore subcollection
   Future<void> _updateSingleExerciseProgress(int index, int output) async {
     final ex = _exerciseProgress[index];
     final exerciseName = ex['name'];
@@ -311,23 +292,12 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    // Also store a summary in the doc itself if needed
-    await _firestore
-        .collection('group_workouts')
-        .doc(widget.workoutCode)
-        .collection('exercise_progress')
-        .doc(exerciseName)
-        .set({
-      'lastUpdated': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    // Mark local state completed
+    // Mark local state as completed
     setState(() {
       _exerciseProgress[index]['completed'] = true;
     });
   }
 
-  /// After finishing, jump to results
   void _navigateToResults() {
     if (widget.isCompetitive) {
       context.go(
@@ -348,13 +318,10 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // UI
-  // ---------------------------------------------------------------------------
-
   @override
   Widget build(BuildContext context) {
     final themeColor = widget.isCompetitive ? Colors.orange : Colors.teal;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: themeColor,
@@ -482,8 +449,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                 ],
               ),
               SizedBox(height: 16),
-
-              // Non-tapable QR code
               Container(
                 padding: EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -579,7 +544,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: List.generate(_participants.length, (index) {
-                    final isYou = _participants[index] == _auth.currentUser!.uid;
+                    final isYou =
+                        _participants[index] == _auth.currentUser!.uid;
                     return Padding(
                       padding: EdgeInsets.only(right: 12),
                       child: Column(
@@ -626,7 +592,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
             itemBuilder: (context, index) {
               final ex = _exerciseProgress[index];
               final isCompleted = ex['completed'] == true;
-              final exerciseType = (ex['type'] as String).toLowerCase();
 
               return AnimatedBuilder(
                 animation: _animController,
@@ -645,7 +610,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                       begin: Offset(1.0, 0.0),
                       end: Offset.zero,
                     ).animate(curvedAnimation),
-                    child: FadeTransition(opacity: curvedAnimation, child: child),
+                    child:
+                    FadeTransition(opacity: curvedAnimation, child: child),
                   );
                 },
                 child: Card(
@@ -665,7 +631,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Exercise Title/Name
+                        // Row with icon + exercise name
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -732,7 +698,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                         ),
                         SizedBox(height: 12),
 
-                        // If completed, show a "Completed" chip, otherwise show input
+                        // If done, show chip; otherwise show input
                         if (isCompleted)
                           Align(
                             alignment: Alignment.centerRight,
@@ -758,7 +724,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
           ),
         ),
 
-        // One big "Submit All" at the bottom
+        // Single big button to "Submit All"
         if (!_isFinished)
           Container(
             padding: EdgeInsets.all(16),
@@ -797,7 +763,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     );
   }
 
-  // Build the appropriate input widget depending on the type (reps/seconds/meters/ etc.)
   Widget _buildExerciseInput(int index, Color themeColor) {
     final ex = _exerciseProgress[index];
     final exerciseType = (ex['type'] as String).toLowerCase();
@@ -808,12 +773,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
         _exerciseProgress[index]['userInput'] = value;
       });
     }
-
-    // Simple wrapper
-    Widget label(String text) => Text(
-      text,
-      style: TextStyle(fontWeight: FontWeight.bold, color: themeColor),
-    );
 
     switch (exerciseType) {
       case 'reps':
@@ -837,7 +796,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
           ),
         );
       default:
-      // fallback: treat any other type like 'reps'
+      // Fallback: treat other types like 'reps'
         return NumericInputWidget(
           label: exerciseType,
           initialValue: currentVal,
