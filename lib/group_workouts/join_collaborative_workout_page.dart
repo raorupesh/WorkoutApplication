@@ -49,7 +49,7 @@ class _JoinCollaborativeWorkoutCodePageState
         }
       } else {
         GoRouter.of(context).go('/collaborativeWorkoutDetails', extra: {
-          'workoutCode': code,
+          'code': code,
           'workoutData': workoutData,
           'isCompetitive': false,
         });

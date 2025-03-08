@@ -188,7 +188,7 @@ final _router = GoRouter(
           return GroupWorkoutResultsPage(
             workoutCode: extra['code'] as String,
             workoutData: extra['workoutData'] as Map<String, dynamic>,
-            isCompetitive: true,
+            isCompetitive: false,
           );
         }),
     GoRoute(

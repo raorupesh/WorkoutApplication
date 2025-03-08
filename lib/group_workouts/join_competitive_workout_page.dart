@@ -50,7 +50,7 @@ class _JoinCompetitiveWorkoutCodePageState
       } else {
         // Navigate to competitive workout details using GoRouter
         GoRouter.of(context).go('/competitiveWorkoutDetails', extra: {
-          'workoutCode': code,
+          'code': code,
           'workoutData': workoutData,
           'isCompetitive': true,
         });
