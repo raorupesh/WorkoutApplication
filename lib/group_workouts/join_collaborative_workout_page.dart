@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile_scanner/mobile_scanner.dart'; // Add this package for QR scanning
-
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../firebase_validations/workout_code_validation.dart';
 import '../widgets/recent_performance_widget.dart';
 
@@ -49,9 +48,10 @@ class _JoinCollaborativeWorkoutCodePageState
           );
         }
       } else {
-        // Navigate to collaborative workout details using go() instead of push()
-        router.go('/collaborativeWorkoutDetails',
-            extra: {'code': code, 'workoutData': workoutData});
+        GoRouter.of(context).go('/collaborativeWorkoutResults', extra: {
+          'code': code,
+          'workoutData': workoutData,
+        });
       }
     } catch (e) {
       if (mounted) {

@@ -191,6 +191,16 @@ final _router = GoRouter(
             isCompetitive: true,
           );
         }),
+    GoRoute(
+        path: '/competitiveWorkoutResults',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return GroupWorkoutResultsPage(
+            workoutCode: extra['code'] as String,
+            workoutData: extra['workoutData'] as Map<String, dynamic>,
+            isCompetitive: true,
+          );
+        }),
   ],
 );
 
