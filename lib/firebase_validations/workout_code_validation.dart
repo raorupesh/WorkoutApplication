@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -7,83 +6,77 @@ class WorkoutCodeService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<Map<String, dynamic>?> validateWorkoutCode(
-      String code, String workoutType // 'collaborative' or 'competitive'
-      ) async {
-    try {
-      // Query Firestore for the workout code
-      final querySnapshot = await _firestore
-          .collection('workout_codes')
-          .where('code', isEqualTo: code)
-          .where('type', isEqualTo: workoutType)
-          .where('active', isEqualTo: true)
-          .limit(1)
-          .get();
-
-      // If no matching code found
-      if (querySnapshot.docs.isEmpty) {
-        return null;
-      }
-
-      // Get the first (and only) document
-      final workoutDoc = querySnapshot.docs.first;
-      final workoutData = workoutDoc.data();
-
-      // Check if the code is still valid
-      if (workoutData['expiresAt'] != null) {
-        final expiresAt = (workoutData['expiresAt'] as Timestamp).toDate();
-        if (expiresAt.isBefore(DateTime.now())) {
-          // Code has expired
-          return null;
-        }
-      }
-
-      // Optional: Check max participants
-      if (workoutData['currentParticipants'] >=
-          workoutData['maxParticipants']) {
-        return null;
-      }
-
-      // Update participant count
-      await workoutDoc.reference.update({
-        'currentParticipants': FieldValue.increment(1),
-        'participants': FieldValue.arrayUnion([_auth.currentUser!.uid])
-      });
-
-      return workoutData;
-    } catch (e) {
-      print('Error validating workout code: $e');
-      return null;
-    }
+  // Generate a random 6-digit code
+  String _generateRandomCode() {
+    final random = Random();
+    final codeInt = random.nextInt(900000) + 100000; // 6-digit number
+    return codeInt.toString();
   }
 
-  // Method to create a new workout code (for admin/workout creation)
+  // Create a new workout code
   Future<String> createWorkoutCode({
     required String workoutType,
-    required int maxParticipants,
-    DateTime? expiresAt,
+    required List<Map<String, dynamic>> exercises,
   }) async {
-    // Generate a 6-digit code
-    final code = _generateSixDigitCode();
+    // Generate a unique code
+    String code;
+    bool isUnique = false;
 
-    await _firestore.collection('workout_codes').add({
-      'code': code,
-      'type': workoutType,
+    do {
+      code = _generateRandomCode();
+      final docSnapshot = await _firestore.collection('group_workouts').doc(code).get();
+      isUnique = !docSnapshot.exists;
+    } while (!isUnique);
+
+    // Get current user
+    final userId = _auth.currentUser!.uid;
+
+    // Create workout document
+    await _firestore.collection('group_workouts').doc(code).set({
+      'workoutCode': code,
+      'workoutType': workoutType,
+      'exercises': exercises,
+      'isCompetitive': workoutType == 'competitive',
+      'participants': [userId],
       'createdAt': FieldValue.serverTimestamp(),
-      'expiresAt': expiresAt ??
-          Timestamp.fromDate(DateTime.now().add(Duration(hours: 24))),
-      'maxParticipants': maxParticipants,
-      'currentParticipants': 0,
-      'active': true,
-      'participants': [],
-      'createdBy': _auth.currentUser!.uid,
+      'expiresAt': FieldValue.serverTimestamp().toString().replaceAll(' ', 'T') + 'Z',
     });
 
     return code;
   }
 
-  String _generateSixDigitCode() {
-    // Generate a random 6-digit code
-    return (100000 + Random().nextInt(900000)).toString();
+  // Validate a workout code
+  Future<Map<String, dynamic>?> validateWorkoutCode(
+      String code,
+      String expectedType,
+      ) async {
+    try {
+      final docSnapshot = await _firestore.collection('group_workouts').doc(code).get();
+
+      if (!docSnapshot.exists) {
+        return null; // Code doesn't exist
+      }
+
+      final data = docSnapshot.data()!;
+
+      // Check if workout type matches
+      if (data['workoutType'] != expectedType) {
+        return null; // Wrong workout type
+      }
+
+      // Check if code is expired (24 hours)
+      final createdAt = (data['createdAt'] as Timestamp).toDate();
+      final now = DateTime.now();
+      final diff = now.difference(createdAt);
+
+      if (diff.inHours > 24) {
+        return null; // Code expired
+      }
+
+      return data;
+    } catch (e) {
+      print('Error validating code: $e');
+      return null;
+    }
   }
 }

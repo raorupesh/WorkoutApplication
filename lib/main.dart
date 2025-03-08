@@ -2,12 +2,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_api_availability/google_api_availability.dart';
 import 'package:provider/provider.dart';
 import 'package:workoutpage/workout_details/workout_selection_page.dart';
 
 import 'firebase_options.dart';
 import 'group_workouts/collaborative_workout_page.dart';
 import 'group_workouts/competitive_workout_page.dart';
+import 'group_workouts/group_workouts_results_screen.dart';
 import 'group_workouts/join_collaborative_workout_page.dart';
 import 'group_workouts/join_competitive_workout_page.dart';
 import 'models/workout_model.dart';
@@ -22,6 +24,14 @@ import 'workout_details/workout_history_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  GoogleApiAvailability apiAvailability = GoogleApiAvailability.instance;
+  GooglePlayServicesAvailability availability = await apiAvailability.checkGooglePlayServicesAvailability();
+
+  if (availability == GooglePlayServicesAvailability.success) {
+    print("Google Play Services are available.");
+  } else {
+    print("Google Play Services are NOT available: $availability");
+  }
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -170,6 +180,17 @@ final _router = GoRouter(
         );
       },
     ),
+    GoRoute(
+      path: '/collaborativeWorkoutResults',
+      builder: (context, state) {
+      final extra = state.extra as Map<String, dynamic>;
+      return GroupWorkoutResultsPage(
+        workoutCode: extra['code'] as String,
+        workoutData: extra['workoutData'] as Map<String, dynamic>,
+        isCompetitive: true,
+      );
+      }
+      ),
   ],
 );
 

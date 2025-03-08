@@ -33,22 +33,31 @@ class _JoinCollaborativeWorkoutCodePageState
           _codeController.text, 'collaborative');
 
       if (workoutData == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Invalid or expired workout code')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Invalid or expired workout code')),
+          );
+        }
       } else {
-        // Navigate to collaborative workout details
-        context.push('/collaborativeWorkoutDetails',
+        // Store the navigator reference
+        final router = GoRouter.of(context);
+
+        // Navigate to collaborative workout details using go() instead of push()
+        router.go('/collaborativeWorkoutDetails',
             extra: {'code': _codeController.text, 'workoutData': workoutData});
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error validating code: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error validating code: $e')),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
