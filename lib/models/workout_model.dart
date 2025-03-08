@@ -1,14 +1,18 @@
+import 'group_workout_models.dart';
+
 class Workout {
   final String workoutName;
   final String date;
   final List<Exercise> exercises;
   final List<ExerciseResult> exerciseResults;
+  final String type; // Added field for workout type
 
   Workout({
     required this.workoutName,
     required this.date,
     required this.exercises,
     this.exerciseResults = const [],
+    this.type = 'solo', // Default type is solo
   });
 
   /// Convert Workout instance to JSON
@@ -18,37 +22,54 @@ class Workout {
       'date': date,
       'exercises': exercises.map((e) => e.toJson()).toList(),
       'exerciseResults': exerciseResults.map((r) => r.toJson()).toList(),
+      'type': type,
     };
   }
 
   /// Factory method to create a Workout from JSON
   factory Workout.fromJson(Map<String, dynamic> json) {
-    print("Parsing Workout JSON: $json"); // Debugging
-
     return Workout(
       workoutName: json['workoutName'] ?? json['name'] ?? "Unnamed Workout",
-      // FIX: Ensure correct key mapping
       date: json['date'] ?? DateTime.now().toIso8601String(),
       exercises: (json['exercises'] as List?)
-              ?.map((e) => Exercise.fromJson(e))
-              .toList() ??
+          ?.map((e) => Exercise.fromJson(e))
+          .toList() ??
           [],
       exerciseResults: (json['exerciseResults'] as List?)
-              ?.map((r) => ExerciseResult.fromJson(r))
-              .toList() ??
+          ?.map((r) => ExerciseResult.fromJson(r))
+          .toList() ??
           [],
+      type: json['type'] ?? 'solo',
     );
   }
 
   /// Get Exercise Result by Name (Ensures results match exercises correctly)
   ExerciseResult? getExerciseResult(String exerciseName) {
     return exerciseResults.firstWhere(
-      (result) => result.name == exerciseName,
+          (result) => result.name == exerciseName,
       orElse: () =>
           ExerciseResult(name: exerciseName, achievedOutput: 0, type: ''),
     );
   }
+
+  /// Factory method to create a Workout from GroupWorkout
+  factory Workout.fromGroupWorkout(GroupWorkout groupWorkout) {
+    return Workout(
+      workoutName: groupWorkout.workoutName,
+      date: DateTime.now().toIso8601String(), // Set current date
+      exercises: groupWorkout.exercises.map((groupExercise) =>
+          Exercise(
+              name: groupExercise.name,
+              targetOutput: groupExercise.targetOutput,
+              type: groupExercise.type
+          )
+      ).toList(),
+      type: groupWorkout.isCompetitive ? 'competitive' : 'collaborative',
+    );
+  }
 }
+
+// Rest of the Exercise and ExerciseResult classes remain unchanged
 
 class Exercise {
   final String name;

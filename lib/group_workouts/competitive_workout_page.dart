@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'group_workout_base_page.dart';
 
 class CompetitiveWorkoutDetailsPage extends StatelessWidget {

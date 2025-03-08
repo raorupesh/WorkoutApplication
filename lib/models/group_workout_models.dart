@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/workout_model.dart';
 
 class GroupWorkout {
   final String workoutCode;
@@ -6,6 +7,7 @@ class GroupWorkout {
   final List<GroupExercise> exercises;
   final bool isCompetitive;
   final List<String> participants;
+  final Timestamp? createdAt;
 
   GroupWorkout({
     required this.workoutCode,
@@ -13,6 +15,7 @@ class GroupWorkout {
     required this.exercises,
     required this.isCompetitive,
     required this.participants,
+    this.createdAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -35,6 +38,23 @@ class GroupWorkout {
       exercises: (map['exercises'] as List)
           .map((e) => GroupExercise.fromMap(e))
           .toList(),
+      createdAt: map['createdAt'],
+    );
+  }
+
+  // Convert to Workout model for display in history
+  Workout toWorkout() {
+    return Workout(
+      workoutName: workoutName,
+      date: createdAt?.toDate().toIso8601String() ?? DateTime.now().toIso8601String(),
+      exercises: exercises.map((groupExercise) =>
+          Exercise(
+              name: groupExercise.name,
+              targetOutput: groupExercise.targetOutput,
+              type: groupExercise.type
+          )
+      ).toList(),
+      type: isCompetitive ? 'competitive' : 'collaborative',
     );
   }
 }
