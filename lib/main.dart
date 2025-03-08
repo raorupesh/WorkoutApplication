@@ -25,7 +25,8 @@ import 'workout_details/workout_history_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoogleApiAvailability apiAvailability = GoogleApiAvailability.instance;
-  GooglePlayServicesAvailability availability = await apiAvailability.checkGooglePlayServicesAvailability();
+  GooglePlayServicesAvailability availability =
+      await apiAvailability.checkGooglePlayServicesAvailability();
 
   if (availability == GooglePlayServicesAvailability.success) {
     print("Google Play Services are available.");
@@ -181,16 +182,15 @@ final _router = GoRouter(
       },
     ),
     GoRoute(
-      path: '/collaborativeWorkoutResults',
-      builder: (context, state) {
-      final extra = state.extra as Map<String, dynamic>;
-      return GroupWorkoutResultsPage(
-        workoutCode: extra['code'] as String,
-        workoutData: extra['workoutData'] as Map<String, dynamic>,
-        isCompetitive: true,
-      );
-      }
-      ),
+        path: '/collaborativeWorkoutResults',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return GroupWorkoutResultsPage(
+            workoutCode: extra['code'] as String,
+            workoutData: extra['workoutData'] as Map<String, dynamic>,
+            isCompetitive: true,
+          );
+        }),
   ],
 );
 

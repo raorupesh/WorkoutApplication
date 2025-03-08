@@ -32,12 +32,12 @@ class Workout {
       workoutName: json['workoutName'] ?? json['name'] ?? "Unnamed Workout",
       date: json['date'] ?? DateTime.now().toIso8601String(),
       exercises: (json['exercises'] as List?)
-          ?.map((e) => Exercise.fromJson(e))
-          .toList() ??
+              ?.map((e) => Exercise.fromJson(e))
+              .toList() ??
           [],
       exerciseResults: (json['exerciseResults'] as List?)
-          ?.map((r) => ExerciseResult.fromJson(r))
-          .toList() ??
+              ?.map((r) => ExerciseResult.fromJson(r))
+              .toList() ??
           [],
       type: json['type'] ?? 'solo',
     );
@@ -46,7 +46,7 @@ class Workout {
   /// Get Exercise Result by Name (Ensures results match exercises correctly)
   ExerciseResult? getExerciseResult(String exerciseName) {
     return exerciseResults.firstWhere(
-          (result) => result.name == exerciseName,
+      (result) => result.name == exerciseName,
       orElse: () =>
           ExerciseResult(name: exerciseName, achievedOutput: 0, type: ''),
     );
@@ -57,13 +57,12 @@ class Workout {
     return Workout(
       workoutName: groupWorkout.workoutName,
       date: DateTime.now().toIso8601String(), // Set current date
-      exercises: groupWorkout.exercises.map((groupExercise) =>
-          Exercise(
+      exercises: groupWorkout.exercises
+          .map((groupExercise) => Exercise(
               name: groupExercise.name,
               targetOutput: groupExercise.targetOutput,
-              type: groupExercise.type
-          )
-      ).toList(),
+              type: groupExercise.type))
+          .toList(),
       type: groupWorkout.isCompetitive ? 'competitive' : 'collaborative',
     );
   }

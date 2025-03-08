@@ -73,12 +73,12 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> {
     final exercises = widget.workoutData['exercises'] as List<dynamic>;
     _exerciseProgress = exercises
         .map((exercise) => {
-      'name': exercise['name'],
-      'targetOutput': exercise['targetOutput'],
-      'type': exercise['type'],
-      'completed': false,
-      'userProgress': [],
-    })
+              'name': exercise['name'],
+              'targetOutput': exercise['targetOutput'],
+              'type': exercise['type'],
+              'completed': false,
+              'userProgress': [],
+            })
         .toList();
 
     // Start listening to exercise progress updates
@@ -114,7 +114,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> {
 
   void _checkWorkoutCompletion() {
     // For the current user only
-    final allCompleted = _exerciseProgress.every((exercise) => exercise['completed'] == true);
+    final allCompleted =
+        _exerciseProgress.every((exercise) => exercise['completed'] == true);
     if (allCompleted && !_isFinished) {
       setState(() {
         _isFinished = true;
@@ -131,7 +132,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: Text('Workout Completed'),
-        content: Text('You have completed all exercises. Would you like to view the results?'),
+        content: Text(
+            'You have completed all exercises. Would you like to view the results?'),
         actions: [
           TextButton(
             onPressed: () {
@@ -207,14 +209,14 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> {
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          _buildInviteSection(),
-          _buildParticipantsSection(),
-          Expanded(
-            child: _buildExercisesList(),
-          ),
-        ],
-      ),
+              children: [
+                _buildInviteSection(),
+                _buildParticipantsSection(),
+                Expanded(
+                  child: _buildExercisesList(),
+                ),
+              ],
+            ),
     );
   }
 
@@ -262,7 +264,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> {
             child: Row(
               children: List.generate(
                 _participants.length,
-                    (index) => Padding(
+                (index) => Padding(
                   padding: EdgeInsets.only(right: 8),
                   child: CircleAvatar(
                     backgroundColor: Colors.teal.shade100,
@@ -312,15 +314,15 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> {
             trailing: exercise['completed']
                 ? Icon(Icons.check_circle, color: Colors.green)
                 : ElevatedButton(
-              onPressed: () async {
-                int output = await _showInputDialog(
-                    context, exercise['type']);
-                if (output > 0) {
-                  await _updateExerciseProgress(index, output);
-                }
-              },
-              child: Text('Submit'),
-            ),
+                    onPressed: () async {
+                      int output =
+                          await _showInputDialog(context, exercise['type']);
+                      if (output > 0) {
+                        await _updateExerciseProgress(index, output);
+                      }
+                    },
+                    child: Text('Submit'),
+                  ),
             isThreeLine: true,
           ),
         );
@@ -331,31 +333,31 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> {
   Future<int> _showInputDialog(BuildContext context, String type) async {
     int input = 0;
     return await showDialog<int>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Enter your $type output"),
-          content: TextField(
-            keyboardType: TextInputType.number,
-            onChanged: (value) => input = int.tryParse(value) ?? 0,
-            decoration: InputDecoration(
-              suffix: Text(type),
-              hintText: "Enter amount",
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, 0),
-              child: Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, input),
-              child: Text("Submit"),
-            ),
-          ],
-        );
-      },
-    ) ??
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text("Enter your $type output"),
+              content: TextField(
+                keyboardType: TextInputType.number,
+                onChanged: (value) => input = int.tryParse(value) ?? 0,
+                decoration: InputDecoration(
+                  suffix: Text(type),
+                  hintText: "Enter amount",
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, 0),
+                  child: Text("Cancel"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, input),
+                  child: Text("Submit"),
+                ),
+              ],
+            );
+          },
+        ) ??
         0;
   }
 }

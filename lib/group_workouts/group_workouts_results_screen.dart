@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../models/group_workout_models.dart';
 
 class GroupWorkoutResultsPage extends StatefulWidget {
   final String workoutCode;
@@ -17,7 +16,8 @@ class GroupWorkoutResultsPage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _GroupWorkoutResultsPageState createState() => _GroupWorkoutResultsPageState();
+  _GroupWorkoutResultsPageState createState() =>
+      _GroupWorkoutResultsPageState();
 }
 
 class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
@@ -224,7 +224,8 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
                 title: Text(
                   userName,
                   style: TextStyle(
-                    fontWeight: isCurrentUser ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isCurrentUser ? FontWeight.bold : FontWeight.normal,
                     color: isCurrentUser ? Colors.teal : null,
                   ),
                 ),
@@ -330,7 +331,8 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
                 title: Text(
                   entry.value,
                   style: TextStyle(
-                    fontWeight: isCurrentUser ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isCurrentUser ? FontWeight.bold : FontWeight.normal,
                     color: isCurrentUser ? Colors.teal : null,
                   ),
                 ),
@@ -359,7 +361,8 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
         title: Text(exercise['name']),
-        subtitle: Text('Target: ${exercise['targetOutput']} ${exercise['type']}'),
+        subtitle:
+            Text('Target: ${exercise['targetOutput']} ${exercise['type']}'),
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -380,14 +383,19 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
                   ...results.asMap().entries.map((entry) {
                     final index = entry.key;
                     final result = entry.value;
-                    final isCurrentUser = result['userId'] == _auth.currentUser?.uid;
+                    final isCurrentUser =
+                        result['userId'] == _auth.currentUser?.uid;
 
                     return ListTile(
-                      leading: widget.isCompetitive ? Text('${index + 1}.') : Icon(Icons.check_circle),
+                      leading: widget.isCompetitive
+                          ? Text('${index + 1}.')
+                          : Icon(Icons.check_circle),
                       title: Text(
                         result['userName'],
                         style: TextStyle(
-                          fontWeight: isCurrentUser ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isCurrentUser
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           color: isCurrentUser ? Colors.teal : null,
                         ),
                       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../main.dart';
 import '../models/workout_model.dart';
 import '../widgets/recent_performance_widget.dart';
@@ -11,7 +12,8 @@ class WorkoutHistoryPage extends StatefulWidget {
   _WorkoutHistoryPageState createState() => _WorkoutHistoryPageState();
 }
 
-class _WorkoutHistoryPageState extends State<WorkoutHistoryPage> with SingleTickerProviderStateMixin {
+class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -154,7 +156,8 @@ class WorkoutHistoryTabContent extends StatelessWidget {
     }).toList();
 
     // Sort workouts by date (newest first)
-    workouts.sort((a, b) => DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
+    workouts.sort(
+        (a, b) => DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
 
     // Debugging
     print("$workoutType Workouts: ${workouts.map((w) => w.toJson()).toList()}");
@@ -162,13 +165,13 @@ class WorkoutHistoryTabContent extends StatelessWidget {
     return workouts.isEmpty
         ? _buildEmptyState(workoutType)
         : ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      itemCount: workouts.length,
-      itemBuilder: (context, index) {
-        final workout = workouts[index];
-        return _buildWorkoutCard(context, workout);
-      },
-    );
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            itemCount: workouts.length,
+            itemBuilder: (context, index) {
+              final workout = workouts[index];
+              return _buildWorkoutCard(context, workout);
+            },
+          );
   }
 
   /// Build Empty State when no workouts are available
@@ -209,7 +212,7 @@ class WorkoutHistoryTabContent extends StatelessWidget {
   Widget _buildWorkoutCard(BuildContext context, Workout workout) {
     final completedExercises = workout.exerciseResults.where((result) {
       final matchingExercise = workout.exercises.firstWhere(
-              (e) => e.name == result.name,
+          (e) => e.name == result.name,
           orElse: () => Exercise(name: '', targetOutput: 0, type: ''));
       return result.achievedOutput >= matchingExercise.targetOutput;
     }).length;

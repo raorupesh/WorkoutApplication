@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart'; // Add this package for QR scanning
-import 'dart:io' show Platform;
 
 import '../firebase_validations/workout_code_validation.dart';
 import '../widgets/recent_performance_widget.dart';
@@ -39,8 +38,8 @@ class _JoinCompetitiveWorkoutCodePageState
     });
 
     try {
-      final workoutData = await _codeService.validateWorkoutCode(
-          code, 'competitive');
+      final workoutData =
+          await _codeService.validateWorkoutCode(code, 'competitive');
 
       if (workoutData == null) {
         if (mounted) {
@@ -105,79 +104,81 @@ class _JoinCompetitiveWorkoutCodePageState
         child: _isLoading
             ? Center(child: CircularProgressIndicator())
             : Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (_isScanning)
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: MobileScanner(
-                    controller: _scannerController,
-                    onDetect: (capture) {
-                      final List<Barcode> barcodes = capture.barcodes;
-                      if (barcodes.isNotEmpty && mounted) {
-                        final String code = barcodes.first.rawValue ?? '';
-                        if (code.length == 6) {
-                          // Automatically process the scanned code
-                          _processCode(code);
-                          // Also update the text controller to show the scanned code
-                          _codeController.text = code;
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Invalid QR code format. Expected a 6-digit code.')),
-                          );
-                        }
-                      }
-                    },
-                  ),
-                ),
-              )
-            else
-              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  TextField(
-                    controller: _codeController,
-                    decoration: InputDecoration(
-                      labelText: '6-Digit Workout Code',
-                      border: OutlineInputBorder(),
-                      counterText: '',
-                      suffixIcon: IconButton(
-                        icon: Icon(Icons.qr_code_scanner),
-                        onPressed: _toggleScanMode,
-                        tooltip: 'Scan QR Code',
+                  if (_isScanning)
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: MobileScanner(
+                          controller: _scannerController,
+                          onDetect: (capture) {
+                            final List<Barcode> barcodes = capture.barcodes;
+                            if (barcodes.isNotEmpty && mounted) {
+                              final String code = barcodes.first.rawValue ?? '';
+                              if (code.length == 6) {
+                                // Automatically process the scanned code
+                                _processCode(code);
+                                // Also update the text controller to show the scanned code
+                                _codeController.text = code;
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          'Invalid QR code format. Expected a 6-digit code.')),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                    )
+                  else
+                    Column(
+                      children: [
+                        TextField(
+                          controller: _codeController,
+                          decoration: InputDecoration(
+                            labelText: '6-Digit Workout Code',
+                            border: OutlineInputBorder(),
+                            counterText: '',
+                            suffixIcon: IconButton(
+                              icon: Icon(Icons.qr_code_scanner),
+                              onPressed: _toggleScanMode,
+                              tooltip: 'Scan QR Code',
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 24, letterSpacing: 10),
+                        ),
+                        SizedBox(height: 30),
+                        ElevatedButton(
+                          onPressed: _validateAndProceed,
+                          child: Text('Join Workout'),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: Size(double.infinity, 50),
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (!_isScanning)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Have a QR code? '),
+                          TextButton(
+                            onPressed: _toggleScanMode,
+                            child: Text('Scan it'),
+                          ),
+                        ],
                       ),
                     ),
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 24, letterSpacing: 10),
-                  ),
-                  SizedBox(height: 30),
-                  ElevatedButton(
-                    onPressed: _validateAndProceed,
-                    child: Text('Join Workout'),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(double.infinity, 50),
-                    ),
-                  ),
                 ],
               ),
-            if (!_isScanning)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Have a QR code? '),
-                    TextButton(
-                      onPressed: _toggleScanMode,
-                      child: Text('Scan it'),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(8.0),

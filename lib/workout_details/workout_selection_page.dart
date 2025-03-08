@@ -42,7 +42,8 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
             // Standard Workout Selection
             GestureDetector(
               onTap: () => context.go('/standardWorkoutRecording'),
-              child: _buildWorkoutCard(Icons.fitness_center, "Standard Workout"),
+              child:
+                  _buildWorkoutCard(Icons.fitness_center, "Standard Workout"),
             ),
             SizedBox(height: 20),
 
@@ -78,18 +79,18 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
             Expanded(
               child: downloadedPlans.isEmpty
                   ? Center(
-                child: Text(
-                  "No downloaded plans yet.",
-                  style: TextStyle(color: Colors.grey),
-                ),
-              )
+                      child: Text(
+                        "No downloaded plans yet.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
                   : ListView.builder(
-                itemCount: downloadedPlans.length,
-                itemBuilder: (context, index) {
-                  final plan = downloadedPlans[index];
-                  return _buildDownloadedWorkoutCard(context, plan);
-                },
-              ),
+                      itemCount: downloadedPlans.length,
+                      itemBuilder: (context, index) {
+                        final plan = downloadedPlans[index];
+                        return _buildDownloadedWorkoutCard(context, plan);
+                      },
+                    ),
             ),
 
             SizedBox(height: 10),
@@ -166,10 +167,10 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
                 context.go('/downloadedWorkoutInput', extra: plan);
               }),
               _buildDialogOption(context, Icons.group, "Collaborative Workout",
-                      () async {
-                    Navigator.pop(context);
-                    await _startCollaborativeWorkout(context, plan);
-                  }),
+                  () async {
+                Navigator.pop(context);
+                await _startCollaborativeWorkout(context, plan);
+              }),
               _buildDialogOption(
                   context, Icons.sports_score, "Competitive Workout", () async {
                 Navigator.pop(context);
@@ -193,7 +194,8 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
   }
 
   /// Start Collaborative Workout with Code Generation
-  Future<void> _startCollaborativeWorkout(BuildContext context, Workout plan) async {
+  Future<void> _startCollaborativeWorkout(
+      BuildContext context, Workout plan) async {
     // Store the navigator state reference before any async operations
     final navigator = GoRouter.of(context);
 
@@ -201,11 +203,13 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
       final workoutCodeService = WorkoutCodeService();
       final workoutCode = await workoutCodeService.createWorkoutCode(
         workoutType: "collaborative",
-        exercises: plan.exercises.map((e) => GroupExercise(
-          name: e.name,
-          targetOutput: e.targetOutput,
-          type: e.type,
-        ).toMap()).toList(),
+        exercises: plan.exercises
+            .map((e) => GroupExercise(
+                  name: e.name,
+                  targetOutput: e.targetOutput,
+                  type: e.type,
+                ).toMap())
+            .toList(),
       );
 
       // Use the stored navigator reference instead of context
@@ -213,7 +217,6 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
         'code': workoutCode,
         'workoutData': plan.toJson(),
       });
-
     } catch (e) {
       if (context.mounted) {
         _showErrorDialog(context, "Error starting collaborative workout: $e");
@@ -221,8 +224,8 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
     }
   }
 
-
-  Future<void> _startCompetitiveWorkout(BuildContext context, Workout plan) async {
+  Future<void> _startCompetitiveWorkout(
+      BuildContext context, Workout plan) async {
     // Store the navigator state reference before any async operations
     final navigator = GoRouter.of(context);
 
@@ -230,11 +233,13 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
       final workoutCodeService = WorkoutCodeService();
       String workoutCode = await workoutCodeService.createWorkoutCode(
         workoutType: "competitive",
-        exercises: plan.exercises.map((e) => GroupExercise(
-          name: e.name,
-          targetOutput: e.targetOutput,
-          type: e.type,
-        ).toMap()).toList(),
+        exercises: plan.exercises
+            .map((e) => GroupExercise(
+                  name: e.name,
+                  targetOutput: e.targetOutput,
+                  type: e.type,
+                ).toMap())
+            .toList(),
       );
 
       // Use the stored navigator reference instead of context
@@ -243,17 +248,18 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
         'workoutData': plan.toJson(),
       });
     } catch (e) {
-      if (context.mounted) {  // Add context.mounted check
+      if (context.mounted) {
+        // Add context.mounted check
         _showErrorDialog(context, "Error starting competitive workout: $e");
       }
     }
   }
 
-
   /// Show Error Dialog
   void _showErrorDialog(BuildContext context, String message) {
     Future.delayed(Duration.zero, () {
-      if (!context.mounted) return; // Prevent dialog crash if widget is disposed
+      if (!context.mounted)
+        return; // Prevent dialog crash if widget is disposed
 
       showDialog(
         context: context,
@@ -270,5 +276,4 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
       );
     });
   }
-
 }

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/workout_model.dart';
 
 class GroupWorkout {
@@ -46,14 +47,14 @@ class GroupWorkout {
   Workout toWorkout() {
     return Workout(
       workoutName: workoutName,
-      date: createdAt?.toDate().toIso8601String() ?? DateTime.now().toIso8601String(),
-      exercises: exercises.map((groupExercise) =>
-          Exercise(
+      date: createdAt?.toDate().toIso8601String() ??
+          DateTime.now().toIso8601String(),
+      exercises: exercises
+          .map((groupExercise) => Exercise(
               name: groupExercise.name,
               targetOutput: groupExercise.targetOutput,
-              type: groupExercise.type
-          )
-      ).toList(),
+              type: groupExercise.type))
+          .toList(),
       type: isCompetitive ? 'competitive' : 'collaborative',
     );
   }

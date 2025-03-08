@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -24,7 +25,8 @@ class WorkoutCodeService {
 
     do {
       code = _generateRandomCode();
-      final docSnapshot = await _firestore.collection('group_workouts').doc(code).get();
+      final docSnapshot =
+          await _firestore.collection('group_workouts').doc(code).get();
       isUnique = !docSnapshot.exists;
     } while (!isUnique);
 
@@ -39,7 +41,8 @@ class WorkoutCodeService {
       'isCompetitive': workoutType == 'competitive',
       'participants': [userId],
       'createdAt': FieldValue.serverTimestamp(),
-      'expiresAt': FieldValue.serverTimestamp().toString().replaceAll(' ', 'T') + 'Z',
+      'expiresAt':
+          FieldValue.serverTimestamp().toString().replaceAll(' ', 'T') + 'Z',
     });
 
     return code;
@@ -47,11 +50,12 @@ class WorkoutCodeService {
 
   // Validate a workout code
   Future<Map<String, dynamic>?> validateWorkoutCode(
-      String code,
-      String expectedType,
-      ) async {
+    String code,
+    String expectedType,
+  ) async {
     try {
-      final docSnapshot = await _firestore.collection('group_workouts').doc(code).get();
+      final docSnapshot =
+          await _firestore.collection('group_workouts').doc(code).get();
 
       if (!docSnapshot.exists) {
         return null; // Code doesn't exist
