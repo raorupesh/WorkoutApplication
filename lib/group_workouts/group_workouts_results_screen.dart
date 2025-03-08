@@ -23,12 +23,17 @@ class GroupWorkoutResultsPage extends StatefulWidget {
 class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
   bool _isLoading = true;
+
+  // We will store final processed data here
   List<Map<String, dynamic>> _exerciseResults = [];
   Map<String, String> _userNames = {};
-  Map<String, int> _userTotalScores = {};
-  int _totalCollaborativeScore = 0;
-  double _collaborativeCompletion = 0.0;
+  Map<String, int> _userTotals = {};
+
+  // Collaborative summary
+  int _totalAchieved = 0;
+  int _totalTarget = 0;
 
   @override
   void initState() {
@@ -38,115 +43,120 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
 
   Future<void> _loadResults() async {
     try {
-      // Get all exercise progress documents
-      final exerciseProgressSnapshot = await _firestore
-          .collection('group_workouts')
-          .doc(widget.workoutCode)
-          .collection('exercise_progress')
-          .get();
-
-      // Get workout participants
-      final workoutSnapshot = await _firestore
+      // 1) Get the group doc
+      final groupDoc = await _firestore
           .collection('group_workouts')
           .doc(widget.workoutCode)
           .get();
+      if (!groupDoc.exists) {
+        setState(() => _isLoading = false);
+        return;
+      }
+      final groupData = groupDoc.data() ?? {};
 
-      final workoutData = workoutSnapshot.data();
-      final List<dynamic> participants = workoutData?['participants'] ?? [];
+      // 2) Get participants
+      final List<dynamic> participants = groupData['participants'] ?? [];
 
-      // Fetch user names
-      for (String userId in List<String>.from(participants)) {
-        final userDoc = await _firestore.collection('users').doc(userId).get();
-        if (userDoc.exists) {
-          _userNames[userId] = userDoc.data()?['displayName'] ?? 'Anonymous';
-        } else {
-          _userNames[userId] = 'Anonymous';
-        }
+      // 3) Collect user names (if you have a "users" collection)
+      //    In your code, you might do something else or skip names.
+      for (String uid in participants) {
+        // If you have user profiles in Firestore, fetch them:
+        // final userDoc = await _firestore.collection('users').doc(uid).get();
+        // if (userDoc.exists) {
+        //   _userNames[uid] = userDoc.data()?['displayName'] ?? 'Anonymous';
+        // } else {
+        //   _userNames[uid] = 'Anonymous';
+        // }
+        // Or just store partial:
+        _userNames[uid] = uid == _auth.currentUser?.uid
+            ? "You"
+            : "User-${uid.substring(0, 5)}";
       }
 
-      // Process the exercise results
-      final exercises = widget.workoutData['exercises'] as List<dynamic>;
-      final targetOutputs = Map<String, int>.fromIterable(
-        exercises,
-        key: (e) => e['name'],
-        value: (e) => e['targetOutput'],
-      );
+      // 4) For each exercise in the workout
+      final exercises = widget.workoutData['exercises'] as List<dynamic>? ?? [];
+      Map<String, int> targetMap = {};
+      for (var ex in exercises) {
+        final exName = ex['name'];
+        final targetVal = ex['target'] ?? ex['targetOutput'] ?? 0;
+        targetMap[exName] = targetVal;
+      }
 
-      // Organize results by exercise
-      Map<String, List<Map<String, dynamic>>> exerciseData = {};
-      int totalTargetOutput = 0;
-      int totalAchievedOutput = 0;
+      // 5) For each exercise, read the subcollection of participants
+      List<Map<String, dynamic>> loadedResults = [];
+      for (var ex in exercises) {
+        final name = ex['name'];
+        final type = ex['type'] ?? ex['unit'] ?? 'reps';
+        final target = targetMap[name] ?? 0;
 
-      for (var doc in exerciseProgressSnapshot.docs) {
-        final data = doc.data();
-        final exerciseName = doc.id;
-        final userId = data['userId'];
-        final output = data['output'] as int;
+        final snap = await _firestore
+            .collection('group_workouts')
+            .doc(widget.workoutCode)
+            .collection('exercise_progress')
+            .doc(name)
+            .collection('participants')
+            .get();
 
-        // For competitive mode: track user scores
-        if (widget.isCompetitive) {
-          _userTotalScores[userId] = (_userTotalScores[userId] ?? 0) + output;
-        }
+        // Build a list
+        List<Map<String, dynamic>> userData = [];
+        int sumOutput = 0;
 
-        // For collaborative mode: track total achievement
-        if (!widget.isCompetitive) {
-          if (targetOutputs.containsKey(exerciseName)) {
-            totalTargetOutput += targetOutputs[exerciseName] ?? 0;
-            totalAchievedOutput += output;
+        for (var doc in snap.docs) {
+          final d = doc.data();
+          final uid = d['userId'] as String;
+          final userName = d['userName'] ?? _userNames[uid] ?? "Anonymous";
+          final output = (d['output'] ?? 0) as int;
+          userData.add({
+            'userId': uid,
+            'userName': userName,
+            'output': output,
+          });
+
+          sumOutput += output;
+
+          // For competitive: keep track of total output per user
+          if (widget.isCompetitive) {
+            _userTotals[uid] = (_userTotals[uid] ?? 0) + output;
           }
         }
 
-        if (!exerciseData.containsKey(exerciseName)) {
-          exerciseData[exerciseName] = [];
+        // Sort userData by output desc
+        userData.sort((a, b) => (b['output'] as int).compareTo(a['output'] as int));
+
+        // For collaborative: track total
+        if (!widget.isCompetitive) {
+          _totalAchieved += sumOutput;
+          _totalTarget += target;
         }
 
-        exerciseData[exerciseName]?.add({
-          'userId': userId,
-          'userName': _userNames[userId] ?? 'Anonymous',
-          'output': output,
-          'timestamp': data['timestamp'],
+        loadedResults.add({
+          'name': name,
+          'type': type,
+          'target': target,
+          'participants': userData,
+          'totalOutput': sumOutput,
         });
       }
 
-      // Sort and prepare final results list
-      _exerciseResults = exercises.map((exercise) {
-        final name = exercise['name'];
-        final targetOutput = exercise['targetOutput'];
-        final type = exercise['type'];
-
-        return {
-          'name': name,
-          'targetOutput': targetOutput,
-          'type': type,
-          'results': exerciseData[name] ?? [],
-        };
-      }).toList();
-
-      // Calculate collaborative completion percentage
-      if (!widget.isCompetitive && totalTargetOutput > 0) {
-        _totalCollaborativeScore = totalAchievedOutput;
-        _collaborativeCompletion = totalAchievedOutput / totalTargetOutput;
-        if (_collaborativeCompletion > 1.0) _collaborativeCompletion = 1.0;
-      }
-
       setState(() {
+        _exerciseResults = loadedResults;
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading results: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      print("Error loading results: $e");
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final title = widget.isCompetitive
+        ? 'Competitive Results'
+        : 'Collaborative Results';
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isCompetitive
-            ? 'Competitive Results'
-            : 'Collaborative Results'),
+        title: Text(title),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () => context.go('/workoutPlanSelection'),
@@ -154,276 +164,226 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
-          : _buildResultsContent(),
+          : _buildResultsBody(),
     );
   }
 
-  Widget _buildResultsContent() {
+  Widget _buildResultsBody() {
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.isCompetitive ? 'Competition Results' : 'Team Results',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-
-            // Display leaderboard for competitive or progress for collaborative
-            widget.isCompetitive
-                ? _buildCompetitiveLeaderboard()
-                : _buildCollaborativeProgress(),
-
-            Divider(height: 32),
-
-            Text(
-              'Exercise Breakdown',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-
-            // Exercise details
-            ..._exerciseResults.map((exercise) => _buildExerciseCard(exercise)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompetitiveLeaderboard() {
-    // Sort users by total score
-    final sortedUsers = _userTotalScores.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Leaderboard',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            ...sortedUsers.asMap().entries.map((entry) {
-              final index = entry.key;
-              final userId = entry.value.key;
-              final score = entry.value.value;
-              final userName = _userNames[userId] ?? 'Anonymous';
-
-              // Highlight current user
-              final isCurrentUser = userId == _auth.currentUser?.uid;
-
-              return ListTile(
-                leading: _getRankIcon(index),
-                title: Text(
-                  userName,
-                  style: TextStyle(
-                    fontWeight:
-                        isCurrentUser ? FontWeight.bold : FontWeight.normal,
-                    color: isCurrentUser ? Colors.teal : null,
-                  ),
-                ),
-                trailing: Text(
-                  score.toString(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _getRankIcon(int index) {
-    if (index == 0) {
-      return CircleAvatar(
-        backgroundColor: Colors.amber,
-        child: Icon(Icons.emoji_events, color: Colors.white),
-      );
-    } else if (index == 1) {
-      return CircleAvatar(
-        backgroundColor: Colors.grey.shade300,
-        child: Icon(Icons.emoji_events, color: Colors.white),
-      );
-    } else if (index == 2) {
-      return CircleAvatar(
-        backgroundColor: Colors.brown.shade300,
-        child: Icon(Icons.emoji_events, color: Colors.white),
-      );
-    } else {
-      return CircleAvatar(
-        backgroundColor: Colors.teal.shade100,
-        child: Text('${index + 1}'),
-      );
-    }
-  }
-
-  Widget _buildCollaborativeProgress() {
-    final exercises = widget.workoutData['exercises'] as List<dynamic>;
-    int targetTotal = 0;
-
-    for (var exercise in exercises) {
-      targetTotal += exercise['targetOutput'] as int;
-    }
-
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Team Progress',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-
-            // Progress bar
-            ClipRounded(
-              child: LinearProgressIndicator(
-                value: _collaborativeCompletion,
-                minHeight: 24,
-                backgroundColor: Colors.grey.shade200,
-                color: _getProgressColor(_collaborativeCompletion),
-              ),
-            ),
-            SizedBox(height: 8),
-
-            // Progress text
-            Text(
-              '${(_collaborativeCompletion * 100).toStringAsFixed(1)}% Complete',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-
-            SizedBox(height: 8),
-            Text(
-              '$_totalCollaborativeScore / $targetTotal total output',
-              style: TextStyle(fontSize: 16),
-            ),
-
-            SizedBox(height: 16),
-            Text(
-              'Team Members (${_userNames.length})',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-
-            // Team members list
-            ..._userNames.entries.map((entry) {
-              final isCurrentUser = entry.key == _auth.currentUser?.uid;
-
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Colors.teal.shade100,
-                  child: Icon(Icons.person, color: Colors.teal.shade700),
-                ),
-                title: Text(
-                  entry.value,
-                  style: TextStyle(
-                    fontWeight:
-                        isCurrentUser ? FontWeight.bold : FontWeight.normal,
-                    color: isCurrentUser ? Colors.teal : null,
-                  ),
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _getProgressColor(double progress) {
-    if (progress < 0.3) return Colors.red;
-    if (progress < 0.7) return Colors.orange;
-    return Colors.green;
-  }
-
-  Widget _buildExerciseCard(Map<String, dynamic> exercise) {
-    final results = exercise['results'] as List<dynamic>;
-
-    // Sort results by output (higher first)
-    results.sort((a, b) => (b['output'] as int).compareTo(a['output'] as int));
-
-    return Card(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ExpansionTile(
-        title: Text(exercise['name']),
-        subtitle:
-            Text('Target: ${exercise['targetOutput']} ${exercise['type']}'),
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Participants',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8),
-                if (results.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text('No results recorded yet'),
-                  )
-                else
-                  ...results.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final result = entry.value;
-                    final isCurrentUser =
-                        result['userId'] == _auth.currentUser?.uid;
-
-                    return ListTile(
-                      leading: widget.isCompetitive
-                          ? Text('${index + 1}.')
-                          : Icon(Icons.check_circle),
-                      title: Text(
-                        result['userName'],
-                        style: TextStyle(
-                          fontWeight: isCurrentUser
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isCurrentUser ? Colors.teal : null,
-                        ),
-                      ),
-                      trailing: Text(
-                        '${result['output']} ${exercise['type']}',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    );
-                  }),
-              ],
-            ),
+          Text(
+            widget.isCompetitive ? "Competition Leaderboard" : "Team Progress",
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
+          SizedBox(height: 16),
+
+          widget.isCompetitive
+              ? _buildCompetitiveLeaderboard()
+              : _buildCollaborativeOverview(),
+
+          SizedBox(height: 24),
+          Divider(),
+
+          Text(
+            'Exercise Breakdown',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+
+          // List of exercises
+          ..._exerciseResults.map((ex) => _buildExerciseCard(ex)).toList(),
         ],
       ),
     );
   }
-}
 
-class ClipRounded extends StatelessWidget {
-  final Widget child;
+  // --------------------------------------
+  // Competitive Leaderboard
+  // --------------------------------------
+  Widget _buildCompetitiveLeaderboard() {
+    // Sort by total points desc
+    final sorted = _userTotals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
-  const ClipRounded({Key? key, required this.child}) : super(key: key);
+    if (sorted.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text("No results yet."),
+        ),
+      );
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: child,
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          children: sorted.asMap().entries.map((entry) {
+            final rank = entry.key;
+            final userId = entry.value.key;
+            final total = entry.value.value;
+            final userName = _userNames[userId] ?? "User-${userId.substring(0,5)}";
+            return ListTile(
+              leading: _buildRankIcon(rank),
+              title: Text(
+                userName,
+                style: TextStyle(
+                  fontWeight: userId == _auth.currentUser!.uid
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                  color: userId == _auth.currentUser!.uid ? Colors.teal : null,
+                ),
+              ),
+              trailing: Text("$total", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRankIcon(int rank) {
+    if (rank == 0) {
+      return CircleAvatar(
+        backgroundColor: Colors.amber,
+        child: Icon(Icons.emoji_events, color: Colors.white),
+      );
+    } else if (rank == 1) {
+      return CircleAvatar(
+        backgroundColor: Colors.grey,
+        child: Icon(Icons.emoji_events, color: Colors.white),
+      );
+    } else if (rank == 2) {
+      return CircleAvatar(
+        backgroundColor: Colors.brown,
+        child: Icon(Icons.emoji_events, color: Colors.white),
+      );
+    }
+    return CircleAvatar(
+      backgroundColor: Colors.teal.shade100,
+      child: Text("${rank + 1}"),
+    );
+  }
+
+  // --------------------------------------
+  // Collaborative Overview
+  // --------------------------------------
+  Widget _buildCollaborativeOverview() {
+    if (_exerciseResults.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text("No results yet."),
+        ),
+      );
+    }
+
+    double progress = 0;
+    if (_totalTarget > 0) {
+      progress = _totalAchieved / _totalTarget;
+      if (progress > 1.0) progress = 1.0;
+    }
+
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Team Progress", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(height: 12),
+
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 20,
+                backgroundColor: Colors.grey.shade300,
+                color: progress < 0.3
+                    ? Colors.red
+                    : (progress < 0.7 ? Colors.orange : Colors.green),
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "${(progress * 100).toStringAsFixed(1)}% complete",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text("$_totalAchieved / $_totalTarget total outputs"),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --------------------------------------
+  // Exercise Breakdown
+  // --------------------------------------
+  Widget _buildExerciseCard(Map<String, dynamic> ex) {
+    final name = ex['name'];
+    final type = ex['type'];
+    final target = ex['target'];
+    final totalOutput = ex['totalOutput'] ?? 0;
+    final participants = ex['participants'] as List<dynamic>;
+
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: 8),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ExpansionTile(
+        title: Text(name),
+        subtitle: Text("Target: $target $type"),
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Achieved: $totalOutput $type",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                Text("Participants:"),
+                SizedBox(height: 8),
+
+                if (participants.isEmpty)
+                  Text("No one has logged this exercise yet.")
+                else
+                  Column(
+                    children: participants.map((p) {
+                      final userId = p['userId'] ?? '';
+                      final userName = p['userName'] ?? 'Unknown';
+                      final output = p['output'] ?? 0;
+                      final isMe = userId == _auth.currentUser?.uid;
+
+                      return ListTile(
+                        leading: widget.isCompetitive
+                            ? Icon(Icons.emoji_events_outlined)
+                            : Icon(Icons.check_circle_outline),
+                        title: Text(
+                          userName,
+                          style: TextStyle(
+                            fontWeight:
+                            isMe ? FontWeight.bold : FontWeight.normal,
+                            color: isMe ? Colors.teal : null,
+                          ),
+                        ),
+                        trailing: Text("$output $type"),
+                      );
+                    }).toList().cast<Widget>(),
+                  ),
+              ],
+            ),
+          )
+        ],
+      ),
     );
   }
 }

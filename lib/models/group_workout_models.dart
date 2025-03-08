@@ -43,7 +43,6 @@ class GroupWorkout {
     );
   }
 
-  // Convert to Workout model for display in history
   Workout toWorkout() {
     return Workout(
       workoutName: workoutName,
@@ -51,9 +50,9 @@ class GroupWorkout {
           DateTime.now().toIso8601String(),
       exercises: exercises
           .map((groupExercise) => Exercise(
-              name: groupExercise.name,
-              targetOutput: groupExercise.targetOutput,
-              type: groupExercise.type))
+        name: groupExercise.name,
+        targetOutput: groupExercise.targetOutput,
+        type: groupExercise.type,))
           .toList(),
       type: isCompetitive ? 'competitive' : 'collaborative',
     );

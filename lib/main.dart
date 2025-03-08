@@ -26,7 +26,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoogleApiAvailability apiAvailability = GoogleApiAvailability.instance;
   GooglePlayServicesAvailability availability =
-      await apiAvailability.checkGooglePlayServicesAvailability();
+  await apiAvailability.checkGooglePlayServicesAvailability();
 
   if (availability == GooglePlayServicesAvailability.success) {
     print("Google Play Services are available.");
@@ -69,7 +69,6 @@ class WorkoutProvider with ChangeNotifier {
   List<Workout> _downloadedPlans = [];
 
   List<Workout> get workouts => _workouts;
-
   List<Workout> get downloadedPlans => _downloadedPlans;
 
   Future<void> initProvider() async {

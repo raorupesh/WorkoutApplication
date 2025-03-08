@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+
 import '../widgets/meters_input_widget.dart';
 import '../widgets/numeric_input_widget.dart';
 import '../widgets/time_input_widget.dart';
@@ -27,21 +28,28 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     with SingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  List<Map<String, dynamic>> _exerciseProgress = [];
-  bool _isLoading = true;
-  List<String> _participants = [];
-  bool _isFinished = false;
-  late AnimationController _animController;
 
-  // New: Create a local copy of workout data that we can modify
+  /// Each exercise is stored as a map:
+  ///   {
+  ///     'name': <String>,
+  ///     'targetOutput': <int>,
+  ///     'type': <String>,
+  ///     'completed': <bool>,
+  ///     'userInput': <int>
+  ///   }
+  List<Map<String, dynamic>> _exerciseProgress = [];
+  List<String> _participants = [];
+  bool _isLoading = true;
+  bool _isFinished = false;
+
   late Map<String, dynamic> _localWorkoutData;
+
+  late AnimationController _animController;
 
   @override
   void initState() {
     super.initState();
-    // Initialize local copy
     _localWorkoutData = Map<String, dynamic>.from(widget.workoutData);
-
     _animController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 500),
@@ -55,66 +63,41 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     super.dispose();
   }
 
+  /// Fetch or fill in the workout data (in case user scanned code)
+  /// Then join the workout, set up the progress watchers
   Future<void> _initializeData() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
-    // For users who scan QR code, we need to fetch the complete workout data
+    // If user scanned a code, we might not have the full "exercises" array
     if (_localWorkoutData['exercises'] == null) {
       try {
-        final workoutDoc = await _firestore
+        final docSnap = await _firestore
             .collection('group_workouts')
             .doc(widget.workoutCode)
             .get();
-
-        if (workoutDoc.exists) {
-          final Map<String, dynamic> serverData = workoutDoc.data() ?? {};
-
-          // Update our local copy with server data
-          setState(() {
-            _localWorkoutData = {
-              ..._localWorkoutData,
-              'exercises': serverData['exercises'] ?? [],
-              'description': serverData['description'] ?? '',
-              // Add any other fields you need
-            };
-          });
-        } else {
-          // Handle case where document doesn't exist
-          print('Workout document does not exist');
-          // Show error message to user
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Workout not found. Invalid code.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          // Navigate back
-          Future.delayed(Duration(seconds: 2), () {
-            context.go('/workoutPlanSelection');
-          });
+        if (!docSnap.exists) {
+          // No valid workout doc
+          _showErrorAndGoBack("Workout does not exist or has been removed.");
           return;
         }
+
+        final serverData = docSnap.data() ?? {};
+        // Merge into local
+        _localWorkoutData['exercises'] = serverData['exercises'] ?? [];
+        _localWorkoutData['description'] = serverData['description'] ?? '';
       } catch (e) {
-        print('Error fetching workout data: $e');
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading workout: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showErrorAndGoBack("Error loading workout: $e");
+        return;
       }
     }
 
-    // Now that we have all data, join the workout
+    // Now that we have data, join the participants
     await _joinWorkout();
 
-    // Initialize exercise progress with the complete data
+    // Prepare local exerciseProgress
     _initializeExerciseProgress();
     _startListeningToParticipants();
-    _startListeningToExerciseProgress();
+    _startListeningToExerciseUpdates();
 
     setState(() {
       _isLoading = false;
@@ -122,10 +105,17 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     _animController.forward();
   }
 
+  void _showErrorAndGoBack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+    Future.delayed(Duration(seconds: 2), () {
+      if (mounted) context.go('/workoutPlanSelection');
+    });
+  }
+
   Future<void> _joinWorkout() async {
     final userId = _auth.currentUser!.uid;
-
-    // Add current user to participants array
     await _firestore
         .collection('group_workouts')
         .doc(widget.workoutCode)
@@ -134,88 +124,74 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     });
   }
 
+  void _initializeExerciseProgress() {
+    final exercises = _localWorkoutData['exercises'];
+    if (exercises == null || exercises is! List) {
+      _exerciseProgress = [];
+      return;
+    }
+
+    _exerciseProgress = exercises.map<Map<String, dynamic>>((exercise) {
+      return {
+        'name': exercise['name'] ?? 'Unnamed',
+        'targetOutput': exercise['target'] ?? exercise['targetOutput'] ?? 0,
+        'type': exercise['unit'] ?? exercise['type'] ?? 'reps',
+        'completed': false,
+        'userInput': 0, // The user’s local input
+      };
+    }).toList();
+  }
+
+  /// Start listening for changes in the "participants" array
   void _startListeningToParticipants() {
     _firestore
         .collection('group_workouts')
         .doc(widget.workoutCode)
         .snapshots()
-        .listen((doc) {
-      if (doc.exists && mounted) {
-        setState(() {
-          _participants = List<String>.from(doc.data()?['participants'] ?? []);
-        });
-      }
+        .listen((snapshot) {
+      if (!snapshot.exists) return;
+      final data = snapshot.data() ?? {};
+      setState(() {
+        _participants = List<String>.from(data['participants'] ?? []);
+      });
     });
   }
 
-  void _initializeExerciseProgress() {
-    // Make sure exercises exists and is a list before proceeding
-    if (_localWorkoutData['exercises'] == null ||
-        !(_localWorkoutData['exercises'] is List)) {
-      print('Exercise data is missing or invalid');
-      setState(() {
-        _exerciseProgress = []; // Initialize as empty if no valid data
-      });
-      return;
-    }
-
-    final exercises = _localWorkoutData['exercises'] as List<dynamic>;
-
-    // Debug: Print the first exercise to see its structure
-    if (exercises.isNotEmpty) {
-      print('First exercise structure:');
-      print(exercises[0]);
-    }
-
-    _exerciseProgress = exercises
-        .map((exercise) => {
-      'name': exercise['name'] ?? 'Unknown Exercise',
-      'targetOutput': exercise['target'] ?? 0,
-      // Try different possible field names for the unit/type
-      'type': exercise['unit'] ?? exercise['type'] ?? exercise['exerciseType'] ?? 'reps',
-      'completed': false,
-      'userProgress': [],
-      'userInput': 0,
-    })
-        .toList();
-  }
-
-  void _startListeningToExerciseProgress() {
+  /// For each exercise, see if the user has submitted
+  void _startListeningToExerciseUpdates() {
     for (int i = 0; i < _exerciseProgress.length; i++) {
       final exerciseName = _exerciseProgress[i]['name'];
 
+      // We track if the user has completed it in the subcollection
       _firestore
           .collection('group_workouts')
           .doc(widget.workoutCode)
           .collection('exercise_progress')
           .doc(exerciseName)
+          .collection('participants')
+          .doc(_auth.currentUser!.uid)
           .snapshots()
-          .listen((doc) {
-        if (doc.exists && mounted) {
+          .listen((docSnap) {
+        if (docSnap.exists) {
+          // If we see data for this user, mark completed
+          final data = docSnap.data() ?? {};
           setState(() {
-            // Mark as completed for this user
-            final userId = _auth.currentUser!.uid;
-            if (doc.data()?['userId'] == userId) {
-              _exerciseProgress[i]['completed'] = true;
-            }
-            // Check if all exercises are completed
-            _checkWorkoutCompletion();
+            _exerciseProgress[i]['completed'] = true;
+            _exerciseProgress[i]['userInput'] = data['output'] ?? 0;
           });
+
+          // Then see if everything is done
+          _checkAllDone();
         }
       });
     }
   }
 
-  void _checkWorkoutCompletion() {
-    // For the current user only
-    final allCompleted =
-    _exerciseProgress.every((exercise) => exercise['completed'] == true);
-    if (allCompleted && !_isFinished) {
-      setState(() {
-        _isFinished = true;
-      });
-
-      // Show completion dialog
+  void _checkAllDone() {
+    // For the current user
+    final all = _exerciseProgress.every((ex) => ex['completed'] == true);
+    if (all && !_isFinished) {
+      setState(() => _isFinished = true);
       _showCompletionDialog();
     }
   }
@@ -224,10 +200,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             Icon(Icons.emoji_events, color: Colors.amber, size: 28),
@@ -235,26 +209,10 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
             Text('Workout Completed!'),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              size: 100,
-              color: Colors.green,
-            ),
-            SizedBox(height: 15),
-            Text(
-              'Congratulations! You have completed all exercises.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
-            ),
-          ],
-        ),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(ctx);
               _navigateToResults();
             },
             child: Text('View Results', style: TextStyle(fontSize: 16)),
@@ -264,54 +222,139 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     );
   }
 
-  void _navigateToResults() {
-    final router = GoRouter.of(context);
+  /// Submits the entire set of exercises in one go
+  Future<void> _submitAllExercises() async {
+    // Validate userInput for each exercise
+    for (final ex in _exerciseProgress) {
+      if (ex['completed'] == true) continue; // skip already-submitted
 
-    if (widget.isCompetitive) {
-      router.go('/competitiveWorkoutResults', extra: {
-        'code': widget.workoutCode,
-        'workoutData': _localWorkoutData, // Use local copy
-      });
-    } else {
-      router.go('/collaborativeWorkoutResults', extra: {
-        'code': widget.workoutCode,
-        'workoutData': _localWorkoutData, // Use local copy
-      });
+      // Check if userInput is > 0
+      if ((ex['userInput'] ?? 0) <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please fill all exercises before submitting.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
     }
-  }
 
-  Future<void> _updateExerciseProgress(int index, int output) async {
+    // Show a loading spinner
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: CircularProgressIndicator(
+          color: widget.isCompetitive ? Colors.orange : Colors.teal,
+        ),
+      ),
+    );
+
     try {
-      String userId = _auth.currentUser!.uid;
-      String exerciseName = _exerciseProgress[index]['name'];
+      for (int i = 0; i < _exerciseProgress.length; i++) {
+        final ex = _exerciseProgress[i];
+        if (ex['completed'] == true) continue; // skip
 
-      // For both competitive and collaborative workouts
-      await _firestore
-          .collection('group_workouts')
-          .doc(widget.workoutCode)
-          .collection('exercise_progress')
-          .doc(exerciseName)
-          .set({
-        'userId': userId,
-        'output': output,
-        'timestamp': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+        final int output = ex['userInput'];
+        await _updateSingleExerciseProgress(i, output);
+      }
 
-      setState(() {
-        _exerciseProgress[index]['completed'] = true;
-      });
+      Navigator.pop(context); // Close the loading dialog
 
-      // Check if all exercises are completed
-      _checkWorkoutCompletion();
+      // If everything is done by now, show success
+      bool allDone = _exerciseProgress.every((ex) => ex['completed'] == true);
+      if (allDone) {
+        setState(() => _isFinished = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('All results submitted successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Go to results
+        Future.delayed(Duration(seconds: 1), () {
+          _navigateToResults();
+        });
+      }
     } catch (e) {
-      throw e;
+      Navigator.pop(context); // close loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error submitting results: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
+
+  /// Submits a single exercise result to the Firestore subcollection
+  Future<void> _updateSingleExerciseProgress(int index, int output) async {
+    final ex = _exerciseProgress[index];
+    final exerciseName = ex['name'];
+    final userId = _auth.currentUser!.uid;
+    final userName = _auth.currentUser!.displayName ??
+        _auth.currentUser!.email ??
+        'User-${userId.substring(0, 5)}';
+
+    await _firestore
+        .collection('group_workouts')
+        .doc(widget.workoutCode)
+        .collection('exercise_progress')
+        .doc(exerciseName)
+        .collection('participants')
+        .doc(userId)
+        .set({
+      'userId': userId,
+      'userName': userName,
+      'output': output,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    // Also store a summary in the doc itself if needed
+    await _firestore
+        .collection('group_workouts')
+        .doc(widget.workoutCode)
+        .collection('exercise_progress')
+        .doc(exerciseName)
+        .set({
+      'lastUpdated': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    // Mark local state completed
+    setState(() {
+      _exerciseProgress[index]['completed'] = true;
+    });
+  }
+
+  /// After finishing, jump to results
+  void _navigateToResults() {
+    if (widget.isCompetitive) {
+      context.go(
+        '/competitiveWorkoutResults',
+        extra: {
+          'code': widget.workoutCode,
+          'workoutData': _localWorkoutData,
+        },
+      );
+    } else {
+      context.go(
+        '/collaborativeWorkoutResults',
+        extra: {
+          'code': widget.workoutCode,
+          'workoutData': _localWorkoutData,
+        },
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // UI
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
     final themeColor = widget.isCompetitive ? Colors.orange : Colors.teal;
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: themeColor,
@@ -353,9 +396,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
             _buildWorkoutInfoHeader(),
             _buildInviteSection(themeColor),
             _buildParticipantsSection(themeColor),
-            Expanded(
-              child: _buildExercisesList(themeColor),
-            ),
+            Expanded(child: _buildExercisesList(themeColor)),
           ],
         ),
       ),
@@ -371,24 +412,19 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
   }
 
   Widget _buildWorkoutInfoHeader() {
+    final desc = _localWorkoutData['description'] ?? '';
     return Container(
       padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Column(
-        children: [
-          if (_localWorkoutData['description'] != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                _localWorkoutData['description'].toString(),
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade700,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-        ],
-      ),
+      child: desc.isNotEmpty
+          ? Text(
+        desc,
+        style: TextStyle(
+          fontSize: 16,
+          color: Colors.grey.shade700,
+        ),
+        textAlign: TextAlign.center,
+      )
+          : SizedBox.shrink(),
     );
   }
 
@@ -446,7 +482,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                 ],
               ),
               SizedBox(height: 16),
-              // Non-tapable QR code display
+
+              // Non-tapable QR code
               Container(
                 padding: EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -464,9 +501,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                 child: QrImageView(
                   data: widget.workoutCode,
                   size: 130,
-                  embeddedImageStyle: QrEmbeddedImageStyle(
-                    size: Size(40, 40),
-                  ),
                 ),
               ),
               SizedBox(height: 10),
@@ -544,56 +578,36 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: List.generate(
-                    _participants.length,
-                        (index) => Padding(
+                  children: List.generate(_participants.length, (index) {
+                    final isYou = _participants[index] == _auth.currentUser!.uid;
+                    return Padding(
                       padding: EdgeInsets.only(right: 12),
                       child: Column(
                         children: [
-                          Stack(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: themeColor.withOpacity(0.2),
-                                radius: 24,
-                                child: Icon(
-                                  Icons.person,
-                                  color: themeColor,
-                                  size: 28,
-                                ),
-                              ),
-                              if (index == 0)
-                                Positioned(
-                                  right: 0,
-                                  bottom: 0,
-                                  child: Container(
-                                    padding: EdgeInsets.all(2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.star,
-                                      color: Colors.amber,
-                                      size: 14,
-                                    ),
-                                  ),
-                                ),
-                            ],
+                          CircleAvatar(
+                            backgroundColor: themeColor.withOpacity(0.2),
+                            radius: 24,
+                            child: Icon(
+                              Icons.person,
+                              color: themeColor,
+                              size: 28,
+                            ),
                           ),
                           SizedBox(height: 4),
                           Text(
-                            index == 0 ? "You" : "User ${index + 1}",
+                            isYou
+                                ? "You"
+                                : "User ${_participants[index].substring(0, 5)}",
                             style: TextStyle(
                               fontSize: 12,
-                              fontWeight: index == 0
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                              fontWeight:
+                              isYou ? FontWeight.bold : FontWeight.normal,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
+                    );
+                  }),
                 ),
               ),
           ],
@@ -610,10 +624,9 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
             padding: EdgeInsets.all(16),
             itemCount: _exerciseProgress.length,
             itemBuilder: (context, index) {
-              final exercise = _exerciseProgress[index];
-              final isCompleted = exercise['completed'] == true;
-              final exerciseType =
-              exercise['type'] as String; // 'reps', 'seconds', or 'meters'
+              final ex = _exerciseProgress[index];
+              final isCompleted = ex['completed'] == true;
+              final exerciseType = (ex['type'] as String).toLowerCase();
 
               return AnimatedBuilder(
                 animation: _animController,
@@ -627,16 +640,12 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                       curve: Curves.easeOut,
                     ),
                   );
-
                   return SlideTransition(
                     position: Tween<Offset>(
                       begin: Offset(1.0, 0.0),
                       end: Offset.zero,
                     ).animate(curvedAnimation),
-                    child: FadeTransition(
-                      opacity: curvedAnimation,
-                      child: child,
-                    ),
+                    child: FadeTransition(opacity: curvedAnimation, child: child),
                   );
                 },
                 child: Card(
@@ -656,6 +665,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Exercise Title/Name
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -668,7 +678,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                _getExerciseIcon(exercise['name']),
+                                _getExerciseIcon(ex['name']),
                                 color: isCompleted ? Colors.green : themeColor,
                               ),
                             ),
@@ -678,18 +688,14 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    exercise['name'],
+                                    ex['name'],
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   SizedBox(height: 4),
-                                  _buildTargetProgressBar(
-                                    exercise,
-                                    isCompleted,
-                                    themeColor,
-                                  ),
+                                  _buildTargetProgressBar(ex, isCompleted, themeColor),
                                   SizedBox(height: 8),
                                   Row(
                                     children: [
@@ -725,6 +731,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                           ],
                         ),
                         SizedBox(height: 12),
+
+                        // If completed, show a "Completed" chip, otherwise show input
                         if (isCompleted)
                           Align(
                             alignment: Alignment.centerRight,
@@ -740,9 +748,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                             ),
                           )
                         else
-                        // Input widget based on exercise type
-                          _buildInputWidgetByType(
-                              exerciseType, index, themeColor),
+                          _buildExerciseInput(index, themeColor),
                       ],
                     ),
                   ),
@@ -751,7 +757,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
             },
           ),
         ),
-        // Single submit button at the bottom
+
+        // One big "Submit All" at the bottom
         if (!_isFinished)
           Container(
             padding: EdgeInsets.all(16),
@@ -790,178 +797,72 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     );
   }
 
-  // Helper method to build the appropriate input widget based on exercise type
-  Widget _buildInputWidgetByType(String type, int index, Color themeColor) {
-    // Initialize with 0 if not set
-    _exerciseProgress[index]['userInput'] ??= 0;
+  // Build the appropriate input widget depending on the type (reps/seconds/meters/ etc.)
+  Widget _buildExerciseInput(int index, Color themeColor) {
+    final ex = _exerciseProgress[index];
+    final exerciseType = (ex['type'] as String).toLowerCase();
+    final currentVal = ex['userInput'] ?? 0;
 
-    // Update function to store the input value in the exercise progress
-    void updateInput(int value) {
+    void onChanged(int value) {
       setState(() {
         _exerciseProgress[index]['userInput'] = value;
       });
     }
 
-    // Return the appropriate widget based on type
-    switch (type.toLowerCase()) {
+    // Simple wrapper
+    Widget label(String text) => Text(
+      text,
+      style: TextStyle(fontWeight: FontWeight.bold, color: themeColor),
+    );
+
+    switch (exerciseType) {
       case 'reps':
         return NumericInputWidget(
           label: 'Reps',
-          initialValue: _exerciseProgress[index]['userInput'],
-          onInputChanged: updateInput,
-          key: ValueKey('reps_input_$index'),
+          initialValue: currentVal,
+          onInputChanged: onChanged,
         );
-
       case 'seconds':
         return TimeInputWidget(
-          initialValue: _exerciseProgress[index]['userInput'],
-          onInputChanged: updateInput,
-          key: ValueKey('time_input_$index'),
+          initialValue: currentVal,
+          onInputChanged: onChanged,
+          key: ValueKey('timeInput-$index'),
         );
-
       case 'meters':
-        return Container(
-          margin: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: MetersInputWidget(
-            onInputChanged: updateInput,
-            key: ValueKey('meters_input_$index'),
+            onInputChanged: onChanged,
+            key: ValueKey('metersInput-$index'),
           ),
         );
-
       default:
-      // Fallback to numeric input for unknown types
+      // fallback: treat any other type like 'reps'
         return NumericInputWidget(
-          label: type,
-          initialValue: _exerciseProgress[index]['userInput'],
-          onInputChanged: updateInput,
-          key: ValueKey('numeric_input_$index'),
+          label: exerciseType,
+          initialValue: currentVal,
+          onInputChanged: onChanged,
         );
-    }
-  }
-
-  // Method to submit all exercise results at once
-  Future<void> _submitAllExercises() async {
-    bool hasInvalidInputs = false;
-    List<int> invalidExerciseIndices = [];
-
-    // Validate all inputs first
-    for (int i = 0; i < _exerciseProgress.length; i++) {
-      if (_exerciseProgress[i]['completed'] == true)
-        continue; // Skip already completed exercises
-
-      final userInput = _exerciseProgress[i]['userInput'] ?? 0;
-      if (userInput <= 0) {
-        invalidExerciseIndices.add(i);
-        hasInvalidInputs = true;
-      }
-    }
-
-    if (hasInvalidInputs) {
-      // Show error for missing inputs
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter values for all exercises'),
-          backgroundColor: Colors.red,
-          action: SnackBarAction(
-            label: 'OK',
-            textColor: Colors.white,
-            onPressed: () {},
-          ),
-        ),
-      );
-
-      // Scroll to the first invalid input
-      if (invalidExerciseIndices.isNotEmpty) {
-        // You would need to implement scrolling to the specific item
-        // This is a placeholder for that functionality
-      }
-
-      return;
-    }
-
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: CircularProgressIndicator(
-          color: widget.isCompetitive ? Colors.orange : Colors.teal,
-        ),
-      ),
-    );
-
-    try {
-      // Submit all exercises data
-      for (int i = 0; i < _exerciseProgress.length; i++) {
-        if (_exerciseProgress[i]['completed'] == true)
-          continue; // Skip already completed exercises
-
-        final output = _exerciseProgress[i]['userInput'];
-        await _updateExerciseProgress(i, output);
-      }
-
-      // Close loading dialog
-      Navigator.pop(context);
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('All results submitted successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      // Close loading dialog
-      Navigator.pop(context);
-
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error submitting results: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  IconData _getExerciseIcon(String exerciseName) {
-    final name = exerciseName.toLowerCase();
-    if (name.contains('run') || name.contains('sprint')) {
-      return Icons.directions_run;
-    } else if (name.contains('push')) {
-      return Icons.fitness_center;
-    } else if (name.contains('squat')) {
-      return Icons.accessibility_new;
-    } else if (name.contains('jump')) {
-      return Icons.height;
-    } else if (name.contains('plank')) {
-      return Icons.horizontal_rule;
-    } else if (name.contains('bike') || name.contains('cycle')) {
-      return Icons.directions_bike;
-    } else if (name.contains('swim')) {
-      return Icons.pool;
-    } else {
-      return Icons.fitness_center;
     }
   }
 
   Widget _buildTargetProgressBar(
-      Map<String, dynamic> exercise, bool isCompleted, Color themeColor) {
+      Map<String, dynamic> ex,
+      bool isCompleted,
+      Color themeColor,
+      ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
+            Text("Target: ", style: TextStyle(fontWeight: FontWeight.w500)),
             Text(
-              "Target: ",
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-            Text(
-              "${exercise['targetOutput']} ${exercise['type']}",
+              "${ex['targetOutput']} ${ex['type']}",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: themeColor,
-                fontSize: 16, // Make this larger
+                fontSize: 16,
               ),
             ),
           ],
@@ -978,5 +879,25 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
         ),
       ],
     );
+  }
+
+  IconData _getExerciseIcon(String name) {
+    final lower = name.toLowerCase();
+    if (lower.contains('run') || lower.contains('sprint')) {
+      return Icons.directions_run;
+    } else if (lower.contains('push')) {
+      return Icons.fitness_center;
+    } else if (lower.contains('squat')) {
+      return Icons.accessibility_new;
+    } else if (lower.contains('jump')) {
+      return Icons.height;
+    } else if (lower.contains('plank')) {
+      return Icons.horizontal_rule;
+    } else if (lower.contains('bike') || lower.contains('cycle')) {
+      return Icons.directions_bike;
+    } else if (lower.contains('swim')) {
+      return Icons.pool;
+    }
+    return Icons.fitness_center;
   }
 }
