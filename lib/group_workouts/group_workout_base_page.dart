@@ -49,6 +49,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
     await _joinWorkout();
     _initializeExerciseProgress();
     _startListeningToParticipants();
+    _startListeningToExerciseProgress(); // Add this line
     setState(() {
       _isLoading = false;
     });
@@ -153,17 +154,16 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/images/success.png', height: 100),
+            Icon(
+              Icons.check_circle_outline, // Or Icons.check_circle, Icons.done, etc.
+              size: 100,
+              color: Colors.green, // Or another appropriate color
+            ),
             SizedBox(height: 15),
             Text(
               'Congratulations! You have completed all exercises.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 5),
-            Text(
-              'Would you like to view the results?',
-              style: TextStyle(color: Colors.grey.shade700),
             ),
           ],
         ),

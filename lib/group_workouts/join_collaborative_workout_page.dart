@@ -48,9 +48,10 @@ class _JoinCollaborativeWorkoutCodePageState
           );
         }
       } else {
-        GoRouter.of(context).go('/collaborativeWorkoutResults', extra: {
-          'code': code,
+        GoRouter.of(context).go('/collaborativeWorkoutDetails', extra: {
+          'workoutCode': code,
           'workoutData': workoutData,
+          'isCompetitive': false,
         });
       }
     } catch (e) {

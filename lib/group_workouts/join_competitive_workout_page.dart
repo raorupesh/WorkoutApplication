@@ -49,9 +49,10 @@ class _JoinCompetitiveWorkoutCodePageState
         }
       } else {
         // Navigate to competitive workout details using GoRouter
-        GoRouter.of(context).go('/competitiveWorkoutResults', extra: {
-          'code': code,
+        GoRouter.of(context).go('/competitiveWorkoutDetails', extra: {
+          'workoutCode': code,
           'workoutData': workoutData,
+          'isCompetitive': true,
         });
       }
     } catch (e) {
