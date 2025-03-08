@@ -24,7 +24,8 @@ class WorkoutDetailsBasePage extends StatefulWidget {
   _WorkoutDetailsBasePageState createState() => _WorkoutDetailsBasePageState();
 }
 
-class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with SingleTickerProviderStateMixin {
+class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
+    with SingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   List<Map<String, dynamic>> _exerciseProgress = [];
@@ -124,16 +125,15 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
     final exercises = widget.workoutData['exercises'] as List<dynamic>;
     _exerciseProgress = exercises
         .map((exercise) => {
-      'name': exercise['name'],
-      'targetOutput': exercise['target'],
-      'type': exercise['unit'],
-      'completed': false,
-      'userProgress': [],
-      'userInput': 0, // Initialize with 0
-    })
+              'name': exercise['name'],
+              'targetOutput': exercise['target'],
+              'type': exercise['unit'],
+              'completed': false,
+              'userProgress': [],
+              'userInput': 0, // Initialize with 0
+            })
         .toList();
   }
-
 
   void _startListeningToExerciseProgress() {
     for (int i = 0; i < _exerciseProgress.length; i++) {
@@ -164,7 +164,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
   void _checkWorkoutCompletion() {
     // For the current user only
     final allCompleted =
-    _exerciseProgress.every((exercise) => exercise['completed'] == true);
+        _exerciseProgress.every((exercise) => exercise['completed'] == true);
     if (allCompleted && !_isFinished) {
       setState(() {
         _isFinished = true;
@@ -194,7 +194,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.check_circle_outline, // Or Icons.check_circle, Icons.done, etc.
+              Icons.check_circle_outline,
+              // Or Icons.check_circle, Icons.done, etc.
               size: 100,
               color: Colors.green, // Or another appropriate color
             ),
@@ -269,7 +270,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final themeColor = widget.isCompetitive ? Colors.orange : Colors.teal;
@@ -280,7 +280,9 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
         foregroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          widget.isCompetitive ? 'Competitive Workout' : 'Collaborative Workout',
+          widget.isCompetitive
+              ? 'Competitive Workout'
+              : 'Collaborative Workout',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
@@ -298,34 +300,34 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: themeColor))
           : Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              themeColor.withOpacity(0.2),
-              Colors.white,
-            ],
-          ),
-        ),
-        child: Column(
-          children: [
-            _buildWorkoutInfoHeader(),
-            _buildInviteSection(themeColor),
-            _buildParticipantsSection(themeColor),
-            Expanded(
-              child: _buildExercisesList(themeColor),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    themeColor.withOpacity(0.2),
+                    Colors.white,
+                  ],
+                ),
+              ),
+              child: Column(
+                children: [
+                  _buildWorkoutInfoHeader(),
+                  _buildInviteSection(themeColor),
+                  _buildParticipantsSection(themeColor),
+                  Expanded(
+                    child: _buildExercisesList(themeColor),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
       floatingActionButton: _isFinished
           ? FloatingActionButton.extended(
-        onPressed: _navigateToResults,
-        icon: Icon(Icons.leaderboard),
-        label: Text('Results'),
-        backgroundColor: themeColor,
-      )
+              onPressed: _navigateToResults,
+              icon: Icon(Icons.leaderboard),
+              label: Text('Results'),
+              backgroundColor: themeColor,
+            )
           : null,
     );
   }
@@ -506,7 +508,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
                 child: Row(
                   children: List.generate(
                     _participants.length,
-                        (index) => Padding(
+                    (index) => Padding(
                       padding: EdgeInsets.only(right: 12),
                       child: Column(
                         children: [
@@ -572,7 +574,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
             itemBuilder: (context, index) {
               final exercise = _exerciseProgress[index];
               final isCompleted = exercise['completed'] == true;
-              final exerciseType = exercise['type'] as String; // 'reps', 'seconds', or 'meters'
+              final exerciseType =
+                  exercise['type'] as String; // 'reps', 'seconds', or 'meters'
 
               return AnimatedBuilder(
                 animation: _animController,
@@ -699,8 +702,9 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
                             ),
                           )
                         else
-                        // Input widget based on exercise type
-                          _buildInputWidgetByType(exerciseType, index, themeColor),
+                          // Input widget based on exercise type
+                          _buildInputWidgetByType(
+                              exerciseType, index, themeColor),
                       ],
                     ),
                   ),
@@ -787,7 +791,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
         );
 
       default:
-      // Fallback to numeric input for unknown types
+        // Fallback to numeric input for unknown types
         return NumericInputWidget(
           label: type,
           initialValue: _exerciseProgress[index]['userInput'],
@@ -804,7 +808,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
 
     // Validate all inputs first
     for (int i = 0; i < _exerciseProgress.length; i++) {
-      if (_exerciseProgress[i]['completed'] == true) continue; // Skip already completed exercises
+      if (_exerciseProgress[i]['completed'] == true)
+        continue; // Skip already completed exercises
 
       final userInput = _exerciseProgress[i]['userInput'] ?? 0;
       if (userInput <= 0) {
@@ -850,7 +855,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
     try {
       // Submit all exercises data
       for (int i = 0; i < _exerciseProgress.length; i++) {
-        if (_exerciseProgress[i]['completed'] == true) continue; // Skip already completed exercises
+        if (_exerciseProgress[i]['completed'] == true)
+          continue; // Skip already completed exercises
 
         final output = _exerciseProgress[i]['userInput'];
         await _updateExerciseProgress(i, output);
@@ -879,7 +885,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
       );
     }
   }
-
 
   IconData _getExerciseIcon(String exerciseName) {
     final name = exerciseName.toLowerCase();
@@ -942,72 +947,72 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> with Si
     final themeColor = widget.isCompetitive ? Colors.orange : Colors.teal;
 
     return await showDialog<int>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.fitness_center, color: themeColor, size: 24),
-              SizedBox(width: 10),
-              Text("Record Your Result"),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "How many $type did you complete?",
-                style: TextStyle(color: Colors.grey.shade700),
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              SizedBox(height: 20),
-              TextField(
-                keyboardType: TextInputType.number,
-                onChanged: (value) => input = int.tryParse(value) ?? 0,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  suffix: Text(type),
-                  hintText: "Enter amount",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+              title: Row(
+                children: [
+                  Icon(Icons.fitness_center, color: themeColor, size: 24),
+                  SizedBox(width: 10),
+                  Text("Record Your Result"),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "How many $type did you complete?",
+                    style: TextStyle(color: Colors.grey.shade700),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: themeColor, width: 2),
+                  SizedBox(height: 20),
+                  TextField(
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) => input = int.tryParse(value) ?? 0,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      suffix: Text(type),
+                      hintText: "Enter amount",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: themeColor, width: 2),
+                      ),
+                    ),
+                    style: TextStyle(fontSize: 18),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, 0),
+                  child: Text(
+                    "Cancel",
+                    style: TextStyle(color: Colors.grey.shade700),
                   ),
                 ),
-                style: TextStyle(fontSize: 18),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, 0),
-              child: Text(
-                "Cancel",
-                style: TextStyle(color: Colors.grey.shade700),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, input),
-              child: Text("Submit"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: themeColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, input),
+                  child: Text("Submit"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: themeColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ],
-        );
-      },
-    ) ??
+              ],
+            );
+          },
+        ) ??
         0;
   }
 }

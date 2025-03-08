@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+
 import '../firebase_validations/workout_code_validation.dart';
 import '../widgets/recent_performance_widget.dart';
 
