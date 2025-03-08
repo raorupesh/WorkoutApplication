@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:workoutpage/workout_details/workout_selection_page.dart';
+
 import 'firebase_options.dart';
 import 'group_workouts/collaborative_workout_page.dart';
 import 'group_workouts/competitive_workout_page.dart';
@@ -57,6 +58,7 @@ class WorkoutProvider with ChangeNotifier {
   List<Workout> _downloadedPlans = [];
 
   List<Workout> get workouts => _workouts;
+
   List<Workout> get downloadedPlans => _downloadedPlans;
 
   Future<void> initProvider() async {
@@ -70,7 +72,6 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
     await DBService.instance.insertCompletedWorkout(workout); // Ensure it saves
   }
-
 
   Future<void> addDownloadedPlan(Workout plan) async {
     _downloadedPlans.add(plan);
@@ -143,7 +144,9 @@ final _router = GoRouter(
       path: '/competitiveWorkoutDetails',
       builder: (context, state) {
         final args = state.extra as Map<String, dynamic>?;
-        if (args == null || !args.containsKey('code') || !args.containsKey('workoutData')) {
+        if (args == null ||
+            !args.containsKey('code') ||
+            !args.containsKey('workoutData')) {
           return ErrorPage("Workout details are missing.");
         }
         return CompetitiveWorkoutDetailsPage(
@@ -156,7 +159,9 @@ final _router = GoRouter(
       path: '/collaborativeWorkoutDetails',
       builder: (context, state) {
         final args = state.extra as Map<String, dynamic>?;
-        if (args == null || !args.containsKey('code') || !args.containsKey('workoutData')) {
+        if (args == null ||
+            !args.containsKey('code') ||
+            !args.containsKey('workoutData')) {
           return ErrorPage("Workout details are missing.");
         }
         return CollaborativeWorkoutDetailsPage(
@@ -201,7 +206,8 @@ class ErrorPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text("Error")),
       body: Center(
-        child: Text(errorMessage, style: TextStyle(fontSize: 18, color: Colors.red)),
+        child: Text(errorMessage,
+            style: TextStyle(fontSize: 18, color: Colors.red)),
       ),
     );
   }

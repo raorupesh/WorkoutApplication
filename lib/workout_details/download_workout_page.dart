@@ -74,7 +74,6 @@ class _DownloadWorkoutPageState extends State<DownloadWorkoutPage> {
     }
   }
 
-
   void _extractJsonLinks(String htmlContent, String baseUrl) {
     try {
       final document = htmlParser.parse(htmlContent);

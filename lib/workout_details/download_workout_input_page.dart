@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../main.dart';
 import '../models/workout_model.dart';
 import '../widgets/meters_input_widget.dart';
@@ -18,7 +19,8 @@ class DownloadedWorkoutInputPage extends StatefulWidget {
       _DownloadedWorkoutInputPageState();
 }
 
-class _DownloadedWorkoutInputPageState extends State<DownloadedWorkoutInputPage> {
+class _DownloadedWorkoutInputPageState
+    extends State<DownloadedWorkoutInputPage> {
   final Map<int, int> exerciseOutputs = {};
 
   @override
@@ -47,7 +49,8 @@ class _DownloadedWorkoutInputPageState extends State<DownloadedWorkoutInputPage>
       exerciseResults: exerciseResults,
     );
 
-    await Provider.of<WorkoutProvider>(context, listen: false).addWorkout(workout);
+    await Provider.of<WorkoutProvider>(context, listen: false)
+        .addWorkout(workout);
 
     // Debug: Ensure workout is saved
     print("Workout saved: ${workout.workoutName}");

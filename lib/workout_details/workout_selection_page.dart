@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../firebase_validations/workout_code_validation.dart';
 import '../main.dart';
 import '../models/workout_model.dart';
@@ -9,7 +10,8 @@ import '../widgets/recent_performance_widget.dart';
 class WorkoutPlanSelectionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final downloadedPlans = Provider.of<WorkoutProvider>(context).downloadedPlans;
+    final downloadedPlans =
+        Provider.of<WorkoutProvider>(context).downloadedPlans;
 
     return Scaffold(
       appBar: AppBar(
@@ -28,14 +30,18 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
           children: [
             Text(
               "Choose Your Workout",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal),
             ),
             SizedBox(height: 20),
 
             // Standard Workout Selection
             GestureDetector(
               onTap: () => context.go('/standardWorkoutRecording'),
-              child: _buildWorkoutCard(Icons.fitness_center, "Standard Workout"),
+              child:
+                  _buildWorkoutCard(Icons.fitness_center, "Standard Workout"),
             ),
             SizedBox(height: 20),
 
@@ -43,12 +49,14 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: () => context.go('/downloadWorkout'),
               icon: Icon(Icons.download, size: 24),
-              label: Text("Download Workout Plan", style: TextStyle(fontSize: 18)),
+              label:
+                  Text("Download Workout Plan", style: TextStyle(fontSize: 18)),
               style: ElevatedButton.styleFrom(
                 minimumSize: Size(double.infinity, 50),
                 backgroundColor: Colors.teal,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
             SizedBox(height: 20),
@@ -56,22 +64,26 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
             // Downloaded Workouts List
             Text(
               "Downloaded Workouts",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal),
             ),
             SizedBox(height: 10),
 
             Expanded(
               child: downloadedPlans.isEmpty
                   ? Center(
-                child: Text("No downloaded plans yet.", style: TextStyle(color: Colors.grey)),
-              )
+                      child: Text("No downloaded plans yet.",
+                          style: TextStyle(color: Colors.grey)),
+                    )
                   : ListView.builder(
-                itemCount: downloadedPlans.length,
-                itemBuilder: (context, index) {
-                  final plan = downloadedPlans[index];
-                  return _buildDownloadedWorkoutCard(context, plan);
-                },
-              ),
+                      itemCount: downloadedPlans.length,
+                      itemBuilder: (context, index) {
+                        final plan = downloadedPlans[index];
+                        return _buildDownloadedWorkoutCard(context, plan);
+                      },
+                    ),
             ),
 
             SizedBox(height: 10),
@@ -98,7 +110,10 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
                 Icon(icon, size: 40, color: Colors.teal),
                 SizedBox(width: 16),
                 Text(title,
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal.shade900)),
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.teal.shade900)),
               ],
             ),
             Icon(Icons.arrow_forward_ios, size: 18, color: Colors.teal),
@@ -116,7 +131,8 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
       color: Colors.teal.shade50,
       child: ListTile(
         title: Text(plan.workoutName,
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal.shade900)),
+            style: TextStyle(
+                fontWeight: FontWeight.bold, color: Colors.teal.shade900)),
         subtitle: Text("${plan.exercises.length} exercises"),
         trailing: Icon(Icons.arrow_forward_ios, size: 18, color: Colors.teal),
         onTap: () => _showWorkoutModeDialog(context, plan),
@@ -138,11 +154,13 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
                 Navigator.pop(context);
                 context.go('/downloadedWorkoutInput', extra: plan);
               }),
-              _buildDialogOption(context, Icons.group, "Collaborative Workout", () async {
+              _buildDialogOption(context, Icons.group, "Collaborative Workout",
+                  () async {
                 Navigator.pop(context);
                 await _startCollaborativeWorkout(context, plan);
               }),
-              _buildDialogOption(context, Icons.sports_score, "Competitive Workout", () async {
+              _buildDialogOption(
+                  context, Icons.sports_score, "Competitive Workout", () async {
                 Navigator.pop(context);
                 await _startCompetitiveWorkout(context, plan);
               }),
@@ -154,7 +172,8 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
   }
 
   /// Build Workout Mode Option for Dialog
-  Widget _buildDialogOption(BuildContext context, IconData icon, String text, VoidCallback onTap) {
+  Widget _buildDialogOption(
+      BuildContext context, IconData icon, String text, VoidCallback onTap) {
     return ListTile(
       leading: Icon(icon, color: Colors.teal),
       title: Text(text),
@@ -163,7 +182,8 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
   }
 
   /// Start Collaborative Workout with Code Generation
-  Future<void> _startCollaborativeWorkout(BuildContext context, Workout plan) async {
+  Future<void> _startCollaborativeWorkout(
+      BuildContext context, Workout plan) async {
     try {
       String workoutCode = await _generateWorkoutCode("collaborative");
       context.go('/collaborativeWorkoutDetails', extra: {
@@ -176,7 +196,8 @@ class WorkoutPlanSelectionPage extends StatelessWidget {
   }
 
   /// Start Competitive Workout with Code Generation
-  Future<void> _startCompetitiveWorkout(BuildContext context, Workout plan) async {
+  Future<void> _startCompetitiveWorkout(
+      BuildContext context, Workout plan) async {
     try {
       String workoutCode = await _generateWorkoutCode("competitive");
       context.go('/competitiveWorkoutDetails', extra: {

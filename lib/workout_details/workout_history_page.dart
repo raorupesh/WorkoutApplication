@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../main.dart';
-import '../widgets/recent_performance_widget.dart';
 import '../models/workout_model.dart';
+import '../widgets/recent_performance_widget.dart';
 
 class WorkoutHistoryPage extends StatelessWidget {
   @override
@@ -15,7 +16,7 @@ class WorkoutHistoryPage extends StatelessWidget {
     print("Loaded Workouts: ${workouts.map((w) => w.toJson()).toList()}");
 
     workouts.sort(
-            (a, b) => DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
+        (a, b) => DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -57,13 +58,13 @@ class WorkoutHistoryPage extends StatelessWidget {
             child: workouts.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              itemCount: workouts.length,
-              itemBuilder: (context, index) {
-                final workout = workouts[index];
-                return _buildWorkoutCard(context, workout);
-              },
-            ),
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: workouts.length,
+                    itemBuilder: (context, index) {
+                      final workout = workouts[index];
+                      return _buildWorkoutCard(context, workout);
+                    },
+                  ),
           ),
 
           // Floating Action Buttons
@@ -103,8 +104,9 @@ class WorkoutHistoryPage extends StatelessWidget {
   /// Build Individual Workout Card
   Widget _buildWorkoutCard(BuildContext context, Workout workout) {
     final completedExercises = workout.exerciseResults.where((result) {
-      final matchingExercise = workout.exercises
-          .firstWhere((e) => e.name == result.name, orElse: () => Exercise(name: '', targetOutput: 0, type: ''));
+      final matchingExercise = workout.exercises.firstWhere(
+          (e) => e.name == result.name,
+          orElse: () => Exercise(name: '', targetOutput: 0, type: ''));
       return result.achievedOutput >= matchingExercise.targetOutput;
     }).length;
 
@@ -122,7 +124,9 @@ class WorkoutHistoryPage extends StatelessWidget {
           children: [
             // Workout Name
             Text(
-              workout.workoutName.isNotEmpty ? workout.workoutName : "Unnamed Workout", // Fixing workout name issue
+              workout.workoutName.isNotEmpty
+                  ? workout.workoutName
+                  : "Unnamed Workout", // Fixing workout name issue
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -162,7 +166,8 @@ class WorkoutHistoryPage extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: Icon(Icons.arrow_forward_rounded, color: Colors.teal.shade800),
+            icon:
+                Icon(Icons.arrow_forward_rounded, color: Colors.teal.shade800),
             onPressed: () {
               context.push('/workoutDetails', extra: workout);
             },

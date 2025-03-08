@@ -26,25 +26,26 @@ class Workout {
     print("Parsing Workout JSON: $json"); // Debugging
 
     return Workout(
-      workoutName: json['workoutName'] ?? json['name'] ?? "Unnamed Workout", // FIX: Ensure correct key mapping
+      workoutName: json['workoutName'] ?? json['name'] ?? "Unnamed Workout",
+      // FIX: Ensure correct key mapping
       date: json['date'] ?? DateTime.now().toIso8601String(),
       exercises: (json['exercises'] as List?)
-          ?.map((e) => Exercise.fromJson(e))
-          .toList() ??
+              ?.map((e) => Exercise.fromJson(e))
+              .toList() ??
           [],
       exerciseResults: (json['exerciseResults'] as List?)
-          ?.map((r) => ExerciseResult.fromJson(r))
-          .toList() ??
+              ?.map((r) => ExerciseResult.fromJson(r))
+              .toList() ??
           [],
     );
   }
 
-
   /// Get Exercise Result by Name (Ensures results match exercises correctly)
   ExerciseResult? getExerciseResult(String exerciseName) {
     return exerciseResults.firstWhere(
-          (result) => result.name == exerciseName,
-      orElse: () => ExerciseResult(name: exerciseName, achievedOutput: 0, type: ''),
+      (result) => result.name == exerciseName,
+      orElse: () =>
+          ExerciseResult(name: exerciseName, achievedOutput: 0, type: ''),
     );
   }
 }

@@ -33,13 +33,15 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> {
 
   void _initializeExerciseProgress() {
     final exercises = widget.workoutData['exercises'] as List<dynamic>;
-    _exerciseProgress = exercises.map((exercise) => {
-      'name': exercise['name'],
-      'targetOutput': exercise['targetOutput'],
-      'type': exercise['type'],
-      'completed': false,
-      'userProgress': [], // Stores individual user inputs
-    }).toList();
+    _exerciseProgress = exercises
+        .map((exercise) => {
+              'name': exercise['name'],
+              'targetOutput': exercise['targetOutput'],
+              'type': exercise['type'],
+              'completed': false,
+              'userProgress': [], // Stores individual user inputs
+            })
+        .toList();
   }
 
   Future<void> _updateExerciseProgress(int index, int output) async {
@@ -58,13 +60,15 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> {
             .where((entry) => entry['userId'] == userId)
             .fold(0, (sum, entry) => sum + entry['output']);
 
-        _exerciseProgress[index]['completed'] = totalUserOutput >= _exerciseProgress[index]['targetOutput'];
+        _exerciseProgress[index]['completed'] =
+            totalUserOutput >= _exerciseProgress[index]['targetOutput'];
       } else {
         // In Collaborative mode, sum all users' outputs
         int totalGroupOutput = _exerciseProgress[index]['userProgress']
             .fold(0, (sum, entry) => sum + entry['output']);
 
-        _exerciseProgress[index]['completed'] = totalGroupOutput >= _exerciseProgress[index]['targetOutput'];
+        _exerciseProgress[index]['completed'] =
+            totalGroupOutput >= _exerciseProgress[index]['targetOutput'];
       }
     });
 
@@ -85,7 +89,9 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isCompetitive ? 'Competitive Workout' : 'Collaborative Workout'),
+        title: Text(widget.isCompetitive
+            ? 'Competitive Workout'
+            : 'Collaborative Workout'),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () => context.go('/workoutPlanSelection'),
@@ -117,14 +123,15 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> {
                     trailing: exercise['completed']
                         ? Icon(Icons.check_circle, color: Colors.green)
                         : ElevatedButton(
-                      onPressed: () async {
-                        int output = await _showInputDialog(context, exercise['type']);
-                        if (output > 0) {
-                          await _updateExerciseProgress(index, output);
-                        }
-                      },
-                      child: Text('Submit'),
-                    ),
+                            onPressed: () async {
+                              int output = await _showInputDialog(
+                                  context, exercise['type']);
+                              if (output > 0) {
+                                await _updateExerciseProgress(index, output);
+                              }
+                            },
+                            child: Text('Submit'),
+                          ),
                   ),
                 );
               },
@@ -138,26 +145,27 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage> {
   Future<int> _showInputDialog(BuildContext context, String type) async {
     int input = 0;
     return await showDialog<int>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Enter your $type output"),
-          content: TextField(
-            keyboardType: TextInputType.number,
-            onChanged: (value) => input = int.tryParse(value) ?? 0,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, 0),
-              child: Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, input),
-              child: Text("Submit"),
-            ),
-          ],
-        );
-      },
-    ) ?? 0;
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text("Enter your $type output"),
+              content: TextField(
+                keyboardType: TextInputType.number,
+                onChanged: (value) => input = int.tryParse(value) ?? 0,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, 0),
+                  child: Text("Cancel"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, input),
+                  child: Text("Submit"),
+                ),
+              ],
+            );
+          },
+        ) ??
+        0;
   }
 }

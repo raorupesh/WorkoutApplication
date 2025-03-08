@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../models/workout_model.dart';
 import '../widgets/recent_performance_widget.dart';
 
@@ -105,7 +106,8 @@ class WorkoutDetailsPage extends StatelessWidget {
       itemCount: workout.exercises.length,
       itemBuilder: (context, index) {
         final exercise = workout.exercises[index];
-        final exerciseResult = workout.getExerciseResult(exercise.name); // Fetch correct result
+        final exerciseResult =
+            workout.getExerciseResult(exercise.name); // Fetch correct result
 
         bool isCompleted = exerciseResult != null &&
             exerciseResult.achievedOutput >= exercise.targetOutput;
@@ -135,10 +137,13 @@ class WorkoutDetailsPage extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildRow(Icons.flag, 'Target: ${exercise.targetOutput} ${exercise.type}'),
-            _buildRow(Icons.check_circle_outline, result != null
-                ? 'Achieved: ${result.achievedOutput} ${result.type}'
-                : 'No result available'),
+            _buildRow(Icons.flag,
+                'Target: ${exercise.targetOutput} ${exercise.type}'),
+            _buildRow(
+                Icons.check_circle_outline,
+                result != null
+                    ? 'Achieved: ${result.achievedOutput} ${result.type}'
+                    : 'No result available'),
             SizedBox(height: 8),
             _buildStatusIndicator(isCompleted),
           ],
@@ -166,7 +171,9 @@ class WorkoutDetailsPage extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: isCompleted ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+        color: isCompleted
+            ? Colors.green.withOpacity(0.1)
+            : Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
