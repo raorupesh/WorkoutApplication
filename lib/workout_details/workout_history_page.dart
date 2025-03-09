@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
 import '../main.dart';
 import '../models/workout_model.dart';
 import '../widgets/recent_performance_widget.dart';
@@ -32,47 +31,50 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
 
   Future<void> _fetchGroupWorkouts() async {
     try {
-      final query =
-      await FirebaseFirestore.instance.collection('group_workouts').get();
+      final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+      if (userId.isEmpty) {
+        print("Error: User ID is empty.");
+        return;
+      }
+
+      final query = await FirebaseFirestore.instance.collection('group_workouts').get();
 
       final List<Workout> collab = [];
       final List<Workout> comp = [];
-
-      // Identify the current user for fetching that user's subcollection docs
-      final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
       for (var doc in query.docs) {
         final data = doc.data();
         final docRef = doc.reference;
 
-        // 'collaborative' or 'competitive'
-        final type = data['workoutType'] ?? '';
-        // Optional: Some group docs might have 'workoutName' or not
-        final workoutName = data['workoutName'] ?? 'Group Workout';
+        // Check if user is in the "participants" list
+        final List<dynamic> participants = data['participants'] ?? [];
+        if (!participants.contains(userId)) continue; // Skip workouts user hasn't participated in
 
-        // Convert Firestore Timestamp -> String date
-        final createdAt = data['createdAt'] as Timestamp?;
-        final dateString = (createdAt != null)
-            ? createdAt.toDate().toIso8601String()
-            : DateTime.now().toIso8601String();
+        // Get workout type
+        final String type = data['workoutType'] ?? '';
 
-        // Parse the top-level exercises array
+        // Extract metadata
+        final String workoutName = data['workoutName'] ?? 'Group Workout';
+        final Timestamp? createdAt = data['createdAt'] as Timestamp?;
+        final String dateString = createdAt?.toDate().toIso8601String() ?? DateTime.now().toIso8601String();
+
+        // Parse exercises
         final exercises = data['exercises'] as List<dynamic>? ?? [];
         final List<Exercise> exerciseList = exercises.map((e) {
-          final name = e['name'] ?? 'Unnamed';
-          final target = e['target'] ?? e['targetOutput'] ?? 0;
-          final unit = e['unit'] ?? e['type'] ?? 'reps';
-          return Exercise(name: name, targetOutput: target, type: unit);
+          return Exercise(
+            name: e['name'] ?? 'Unnamed',
+            targetOutput: e['target'] ?? e['targetOutput'] ?? 0,
+            type: e['unit'] ?? e['type'] ?? 'reps',
+          );
         }).toList();
 
-        // Now build up the user’s exerciseResults from Firestore
+        // Fetch the user's recorded results
         final List<ExerciseResult> userResults = [];
 
-        // For each exercise, see if the current user recorded an output
         for (var ex in exerciseList) {
           final exerciseName = ex.name;
 
-          // Pull the doc in subcollection: /exercise_progress/{exerciseName}/participants/{userId}
           final participantDoc = await docRef
               .collection('exercise_progress')
               .doc(exerciseName)
@@ -84,16 +86,15 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
             final participantData = participantDoc.data() ?? {};
             final output = participantData['output'] ?? 0;
 
-            // Build an ExerciseResult for the current user
             userResults.add(
               ExerciseResult(
                 name: exerciseName,
                 achievedOutput: output,
-                type: ex.type, // re-use the same unit from the exercise itself
+                type: ex.type,
               ),
             );
           } else {
-            // If no doc exists for that user, the user hasn’t recorded anything for that exercise
+            // If the user has not recorded this exercise, assume 0 output
             userResults.add(
               ExerciseResult(
                 name: exerciseName,
@@ -104,16 +105,16 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
           }
         }
 
-        // Build a Workout that includes the user’s results
+        // Build workout object
         final workout = Workout(
           workoutName: workoutName,
           date: dateString,
           exercises: exerciseList,
           exerciseResults: userResults,
-          type: type, // "collaborative" or "competitive"
+          type: type,
         );
 
-        // Store this workout in the correct list
+        // Add to correct list
         if (type == 'competitive') {
           comp.add(workout);
         } else if (type == 'collaborative') {
@@ -121,15 +122,17 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
         }
       }
 
-      // Update state with all fetched workouts
+      // Update state with only relevant workouts
       setState(() {
         _firebaseCollaborative = collab;
         _firebaseCompetitive = comp;
       });
+
     } catch (e) {
       print("Error fetching group workouts: $e");
     }
   }
+
 
 
   @override

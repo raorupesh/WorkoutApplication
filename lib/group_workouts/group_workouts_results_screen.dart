@@ -26,12 +26,11 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
 
   bool _isLoading = true;
 
-  // We will store final processed data here
+
   List<Map<String, dynamic>> _exerciseResults = [];
   Map<String, String> _userNames = {};
   Map<String, int> _userTotals = {};
 
-  // Collaborative summary
   int _totalAchieved = 0;
   int _totalTarget = 0;
 
@@ -54,26 +53,16 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
       }
       final groupData = groupDoc.data() ?? {};
 
-      // 2) Get participants
+
       final List<dynamic> participants = groupData['participants'] ?? [];
 
-      // 3) Collect user names (if you have a "users" collection)
-      //    In your code, you might do something else or skip names.
       for (String uid in participants) {
-        // If you have user profiles in Firestore, fetch them:
-        // final userDoc = await _firestore.collection('users').doc(uid).get();
-        // if (userDoc.exists) {
-        //   _userNames[uid] = userDoc.data()?['displayName'] ?? 'Anonymous';
-        // } else {
-        //   _userNames[uid] = 'Anonymous';
-        // }
-        // Or just store partial:
+
         _userNames[uid] = uid == _auth.currentUser?.uid
             ? "You"
             : "User-${uid.substring(0, 5)}";
       }
 
-      // 4) For each exercise in the workout
       final exercises = widget.workoutData['exercises'] as List<dynamic>? ?? [];
       Map<String, int> targetMap = {};
       for (var ex in exercises) {
@@ -82,7 +71,7 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
         targetMap[exName] = targetVal;
       }
 
-      // 5) For each exercise, read the subcollection of participants
+
       List<Map<String, dynamic>> loadedResults = [];
       for (var ex in exercises) {
         final name = ex['name'];
@@ -114,13 +103,13 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
 
           sumOutput += output;
 
-          // For competitive: keep track of total output per user
+
           if (widget.isCompetitive) {
             _userTotals[uid] = (_userTotals[uid] ?? 0) + output;
           }
         }
 
-        // Sort userData by output desc
+
         userData.sort((a, b) => (b['output'] as int).compareTo(a['output'] as int));
 
         // For collaborative: track total
@@ -200,9 +189,6 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
     );
   }
 
-  // --------------------------------------
-  // Competitive Leaderboard
-  // --------------------------------------
   Widget _buildCompetitiveLeaderboard() {
     // Sort by total points desc
     final sorted = _userTotals.entries.toList()
@@ -270,9 +256,7 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
     );
   }
 
-  // --------------------------------------
-  // Collaborative Overview
-  // --------------------------------------
+
   Widget _buildCollaborativeOverview() {
     if (_exerciseResults.isEmpty) {
       return Card(
@@ -324,9 +308,6 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
     );
   }
 
-  // --------------------------------------
-  // Exercise Breakdown
-  // --------------------------------------
   Widget _buildExerciseCard(Map<String, dynamic> ex) {
     final name = ex['name'];
     final type = ex['type'];

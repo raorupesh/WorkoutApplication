@@ -176,21 +176,8 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
   }
 
   /// Called when the user taps "SUBMIT ALL RESULTS"
+  /// Called when the user taps "SUBMIT ALL RESULTS"
   Future<void> _submitAllExercises() async {
-    // Make sure each exercise has an input > 0
-    for (final ex in _exerciseProgress) {
-      if (ex['completed'] == true) continue;
-      if ((ex['userInput'] ?? 0) <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Please fill all exercises before submitting.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-    }
-
     // Show a loading spinner
     showDialog(
       context: context,
@@ -203,59 +190,21 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     );
 
     try {
-      // Save each exercise result in Firestore
+      // Save only exercises where the user has entered an input > 0
       for (int i = 0; i < _exerciseProgress.length; i++) {
         final ex = _exerciseProgress[i];
-        if (ex['completed'] == true) continue; // skip if already done
 
-        final int output = ex['userInput'];
-        await _updateSingleExerciseProgress(i, output);
+        final int output = ex['userInput'] ?? 0;
+        if (output > 0) {
+          await _updateSingleExerciseProgress(i, output);
+        }
       }
 
-      // Close the loading dialog
       if (mounted) {
         Navigator.pop(context);
       }
 
       setState(() => _isFinished = true);
-
-      // --------------------------------------------------
-      // IMPORTANT ADDITION: Save local copy so that
-      // collaborative/competitive workouts appear in
-      // WorkoutHistoryPage's respective tab.
-      // --------------------------------------------------
-      try {
-        final localWorkout = Workout(
-          workoutName: _localWorkoutData["workoutName"] ??
-              (widget.isCompetitive
-                  ? "Competitive Workout"
-                  : "Collaborative Workout"),
-          date: DateTime.now().toIso8601String(),
-          exercises: _exerciseProgress.map((ex) {
-            return Exercise(
-              name: ex['name'],
-              targetOutput: ex['targetOutput'],
-              type: ex['type'],
-            );
-          }).toList(),
-          exerciseResults: _exerciseProgress.map((ex) {
-            return ExerciseResult(
-              name: ex['name'],
-              achievedOutput: ex['userInput'],
-              type: ex['type'],
-            );
-          }).toList(),
-          type: widget.isCompetitive ? 'competitive' : 'collaborative',
-        );
-
-        // This ensures the local DB sees it as collaborative or competitive.
-        await Provider.of<WorkoutProvider>(context, listen: false)
-            .addWorkout(localWorkout);
-      } catch (e) {
-        print("Error saving local copy of group workout: $e");
-      }
-
-      // Now go to the group results screen
       _navigateToResults();
     } catch (e) {
       // Close the loading indicator
@@ -269,6 +218,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
       );
     }
   }
+
 
   Future<void> _updateSingleExerciseProgress(int index, int output) async {
     final ex = _exerciseProgress[index];
@@ -662,35 +612,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
                                   ),
                                   SizedBox(height: 4),
                                   _buildTargetProgressBar(ex, isCompleted, themeColor),
-                                  SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        widget.isCompetitive
-                                            ? Icons.emoji_events
-                                            : Icons.group_work,
-                                        size: 16,
-                                        color: widget.isCompetitive
-                                            ? Colors.orange
-                                            : Colors.green,
-                                      ),
-                                      SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          widget.isCompetitive
-                                              ? "Competitive - Beat your personal best!"
-                                              : "Collaborative - Work together to reach the target!",
-                                          style: TextStyle(
-                                            fontStyle: FontStyle.italic,
-                                            color: widget.isCompetitive
-                                                ? Colors.orange
-                                                : Colors.green,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                                 ],
                               ),
                             ),
