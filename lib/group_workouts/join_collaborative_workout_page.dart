@@ -113,8 +113,7 @@ class _JoinCollaborativeWorkoutCodePageState
               style: TextStyle(fontSize: 24, letterSpacing: 10),
             ),
             if (_isScanning)
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
+              Expanded(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: MobileScanner(
@@ -128,9 +127,7 @@ class _JoinCollaborativeWorkoutCodePageState
                           _codeController.text = code;
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    'Invalid QR code format. Expected a 6-digit code.')),
+                            SnackBar(content: Text('Invalid QR code format. Expected a 6-digit code.')),
                           );
                         }
                       }

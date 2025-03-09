@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
 import '../widgets/recent_performance_widget.dart';
 
 class GroupWorkoutResultsPage extends StatefulWidget {
@@ -114,7 +113,6 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
 
         userData.sort((a, b) => (b['output'] as int).compareTo(a['output'] as int));
 
-        // For collaborative: track total
         if (!widget.isCompetitive) {
           _totalAchieved += sumOutput;
           _totalTarget += target;

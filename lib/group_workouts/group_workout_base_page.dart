@@ -57,7 +57,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
   Future<void> _initializeData() async {
     setState(() => _isLoading = true);
 
-    // If no exercises locally, try to load them from Firestore
+
     if (_localWorkoutData['exercises'] == null) {
       try {
         final docSnap = await _firestore
@@ -121,7 +121,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
         'targetOutput': exercise['target'] ?? exercise['targetOutput'] ?? 0,
         'type': exercise['unit'] ?? exercise['type'] ?? 'reps',
         'completed': false,
-        'userInput': 0, // local user input
+        'userInput': 0,
       };
     }).toList();
   }
@@ -172,8 +172,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     }
   }
 
-  /// Called when the user taps "SUBMIT ALL RESULTS"
-  /// Called when the user taps "SUBMIT ALL RESULTS"
+
   Future<void> _submitAllExercises() async {
     // Show a loading spinner
     showDialog(
@@ -187,7 +186,6 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     );
 
     try {
-      // Save only exercises where the user has entered an input > 0
       for (int i = 0; i < _exerciseProgress.length; i++) {
         final ex = _exerciseProgress[i];
 
@@ -591,8 +589,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
             },
           ),
         ),
-
-        SizedBox(height: 80), // Add space for floating button
+        SizedBox(height: 80),
       ],
     );
   }
@@ -676,23 +673,4 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
     );
   }
 
-  IconData _getExerciseIcon(String name) {
-    final lower = name.toLowerCase();
-    if (lower.contains('run') || lower.contains('sprint')) {
-      return Icons.directions_run;
-    } else if (lower.contains('push')) {
-      return Icons.fitness_center;
-    } else if (lower.contains('squat')) {
-      return Icons.accessibility_new;
-    } else if (lower.contains('jump')) {
-      return Icons.height;
-    } else if (lower.contains('plank')) {
-      return Icons.horizontal_rule;
-    } else if (lower.contains('bike') || lower.contains('cycle')) {
-      return Icons.directions_bike;
-    } else if (lower.contains('swim')) {
-      return Icons.pool;
-    }
-    return Icons.fitness_center;
-  }
 }

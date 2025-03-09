@@ -58,14 +58,14 @@ class WorkoutCodeService {
           await _firestore.collection('group_workouts').doc(code).get();
 
       if (!docSnapshot.exists) {
-        return null; // Code doesn't exist
+        return null;
       }
 
       final data = docSnapshot.data()!;
 
-      // Check if workout type matches
+
       if (data['workoutType'] != expectedType) {
-        return null; // Wrong workout type
+        return null;
       }
 
       // Check if code is expired (24 hours)
