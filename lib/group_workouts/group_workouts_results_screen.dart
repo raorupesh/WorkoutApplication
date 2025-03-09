@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../widgets/recent_performance_widget.dart';
+
 class GroupWorkoutResultsPage extends StatefulWidget {
   final String workoutCode;
   final Map<String, dynamic> workoutData;
@@ -182,12 +184,23 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
           ),
           SizedBox(height: 8),
 
-          // List of exercises
           ..._exerciseResults.map((ex) => _buildExerciseCard(ex)).toList(),
+
+          SizedBox(height: 24),
+
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Container(
+              width: double.infinity,
+              height: 100,  // Adjust the height as needed
+              child: RecentPerformanceWidget(),
+            ),
+          ),
         ],
       ),
     );
   }
+
 
   Widget _buildCompetitiveLeaderboard() {
     // Sort by total points desc

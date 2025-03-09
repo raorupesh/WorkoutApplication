@@ -2,11 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart'; // <-- Make sure to have this
 import 'package:qr_flutter/qr_flutter.dart';
-
-import '../main.dart'; // <-- So we can access WorkoutProvider
-import '../models/workout_model.dart';
+import '../widgets/recent_performance_widget.dart';
 import '../widgets/meters_input_widget.dart';
 import '../widgets/numeric_input_widget.dart';
 import '../widgets/time_input_widget.dart';
@@ -278,9 +275,7 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
         foregroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          widget.isCompetitive
-              ? 'Competitive Workout'
-              : 'Collaborative Workout',
+          widget.isCompetitive ? 'Competitive Workout' : 'Collaborative Workout',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
@@ -317,16 +312,24 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
           ],
         ),
       ),
-      floatingActionButton: _isFinished
-          ? FloatingActionButton.extended(
-        onPressed: _navigateToResults,
-        icon: Icon(Icons.leaderboard),
-        label: Text('Results'),
-        backgroundColor: themeColor,
-      )
-          : null,
+      floatingActionButton:
+          FloatingActionButton(
+            onPressed: _submitAllExercises,
+            child: Icon(Icons.save),
+            backgroundColor: themeColor,
+          ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Container(
+          width: double.infinity,
+          height: 80,
+          child: RecentPerformanceWidget(),
+        ),
+      ),
     );
   }
+
+
 
   Widget _buildWorkoutInfoHeader() {
     final desc = _localWorkoutData['description'] ?? '';
@@ -543,101 +546,45 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
               final ex = _exerciseProgress[index];
               final isCompleted = ex['completed'] == true;
 
-              return AnimatedBuilder(
-                animation: _animController,
-                builder: (context, child) {
-                  final delay = (index + 3) * 0.2;
-                  final curvedAnimation = CurvedAnimation(
-                    parent: _animController,
-                    curve: Interval(
-                      delay < 1.0 ? delay : 0.9,
-                      1.0,
-                      curve: Curves.easeOut,
-                    ),
-                  );
-                  return SlideTransition(
-                    position: Tween<Offset>(
-                      begin: Offset(1.0, 0.0),
-                      end: Offset.zero,
-                    ).animate(curvedAnimation),
-                    child:
-                    FadeTransition(opacity: curvedAnimation, child: child),
-                  );
-                },
-                child: Card(
-                  margin: EdgeInsets.only(bottom: 12),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: isCompleted
-                          ? Colors.green.withOpacity(0.5)
-                          : Colors.grey.withOpacity(0.2),
-                      width: isCompleted ? 2 : 1,
-                    ),
+              return Card(
+                margin: EdgeInsets.only(bottom: 12),
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: isCompleted ? Colors.green.withOpacity(0.5) : Colors.grey.withOpacity(0.2),
+                    width: isCompleted ? 2 : 1,
                   ),
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Row with icon + exercise name
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isCompleted
-                                    ? Colors.green.withOpacity(0.1)
-                                    : themeColor.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                _getExerciseIcon(ex['name']),
-                                color: isCompleted ? Colors.green : themeColor,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    ex['name'],
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  _buildTargetProgressBar(ex, isCompleted, themeColor),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 12),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Exercise Name
+                      Text(
+                        ex['name'],
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 8),
 
-                        // If done, show chip; otherwise show input
-                        if (isCompleted)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Chip(
-                              label: Text('Completed'),
-                              avatar: Icon(
-                                Icons.check_circle,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                              backgroundColor: Colors.green,
-                              labelStyle: TextStyle(color: Colors.white),
-                            ),
-                          )
-                        else
-                          _buildExerciseInput(index, themeColor),
-                      ],
-                    ),
+                      // Progress Bar
+                      _buildTargetProgressBar(ex, isCompleted, themeColor),
+
+                      // If done, show chip; otherwise show input field
+                      if (isCompleted)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Chip(
+                            label: Text('Completed'),
+                            avatar: Icon(Icons.check_circle, color: Colors.white, size: 16),
+                            backgroundColor: Colors.green,
+                            labelStyle: TextStyle(color: Colors.white),
+                          ),
+                        )
+                      else
+                        _buildExerciseInput(index, themeColor),
+                    ],
                   ),
                 ),
               );
@@ -645,44 +592,12 @@ class _WorkoutDetailsBasePageState extends State<WorkoutDetailsBasePage>
           ),
         ),
 
-        // Single big button to "Submit All"
-        if (!_isFinished)
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 5,
-                  offset: Offset(0, -2),
-                ),
-              ],
-            ),
-            child: ElevatedButton.icon(
-              onPressed: _submitAllExercises,
-              icon: Icon(Icons.save, size: 20),
-              label: Text(
-                'SUBMIT ALL RESULTS',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: themeColor,
-                foregroundColor: Colors.white,
-                minimumSize: Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-              ),
-            ),
-          ),
+        SizedBox(height: 80), // Add space for floating button
       ],
     );
   }
+
+
 
   Widget _buildExerciseInput(int index, Color themeColor) {
     final ex = _exerciseProgress[index];

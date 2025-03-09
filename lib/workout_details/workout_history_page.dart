@@ -69,22 +69,23 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
           );
         }).toList();
 
-        // Fetch the user's recorded results
+        // Fetch all participants' recorded results
         final List<ExerciseResult> userResults = [];
+        final Map<String, int> userTotals = {};
 
         for (var ex in exerciseList) {
           final exerciseName = ex.name;
-
-          final participantDoc = await docRef
+          final snap = await docRef
               .collection('exercise_progress')
               .doc(exerciseName)
               .collection('participants')
-              .doc(userId)
               .get();
 
-          if (participantDoc.exists) {
-            final participantData = participantDoc.data() ?? {};
-            final output = participantData['output'] ?? 0;
+          for (var userDoc in snap.docs) {
+            final d = userDoc.data();
+            final uid = d['userId'] ?? '';
+            final userName = d['userName'] ?? "User-${uid.substring(0, 5)}";
+            final output = (d['output'] ?? 0) as int;
 
             userResults.add(
               ExerciseResult(
@@ -93,15 +94,10 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
                 type: ex.type,
               ),
             );
-          } else {
-            // If the user has not recorded this exercise, assume 0 output
-            userResults.add(
-              ExerciseResult(
-                name: exerciseName,
-                achievedOutput: 0,
-                type: ex.type,
-              ),
-            );
+
+            if (type == 'competitive') {
+              userTotals[uid] = (userTotals[uid] ?? 0) + output;
+            }
           }
         }
 
@@ -122,7 +118,6 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
         }
       }
 
-      // Update state with only relevant workouts
       setState(() {
         _firebaseCollaborative = collab;
         _firebaseCompetitive = comp;
@@ -132,7 +127,6 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
       print("Error fetching group workouts: $e");
     }
   }
-
 
 
   @override
@@ -268,8 +262,7 @@ class WorkoutHistoryTabContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If this is "solo," we'll fetch from local DB.
-    // Otherwise, we rely on firebaseWorkouts.
+
     List<Workout> workouts;
     if (workoutType == 'solo') {
       final workoutProvider = Provider.of<WorkoutProvider>(context);
