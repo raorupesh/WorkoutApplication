@@ -6,11 +6,11 @@ import '../widgets/recent_performance_widget.dart';
 
 class JoinCompetitiveWorkoutPage extends StatefulWidget {
   @override
-  _JoinCompetitiveWorkoutCodePageState createState() =>
-      _JoinCompetitiveWorkoutCodePageState();
+  _JoinCompetitiveWorkoutPageState createState() =>
+      _JoinCompetitiveWorkoutPageState();
 }
 
-class _JoinCompetitiveWorkoutCodePageState
+class _JoinCompetitiveWorkoutPageState
     extends State<JoinCompetitiveWorkoutPage> {
   final TextEditingController _codeController = TextEditingController();
   final WorkoutCodeService _codeService = WorkoutCodeService();
@@ -18,45 +18,35 @@ class _JoinCompetitiveWorkoutCodePageState
   bool _isScanning = false;
   final MobileScannerController _scannerController = MobileScannerController();
 
+  /// Validates the entered code and processes it
   Future<void> _validateAndProceed() async {
-    if (_codeController.text.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter a valid 6-digit code')),
-      );
+    String code = _codeController.text.trim();
+
+    if (code.length != 6) {
+      _showSnackBar('Please enter a valid 6-digit code');
       return;
     }
-
-    _processCode(_codeController.text);
+    _processCode(code);
   }
 
+  /// Processes the workout code by validating it and navigating accordingly
   Future<void> _processCode(String code) async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      final workoutData =
-      await _codeService.validateWorkoutCode(code, 'collaborative');
+      final workoutData = await _codeService.validateWorkoutCode(code, 'competitive');
 
       if (workoutData == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Invalid or expired workout code')),
-          );
-        }
+        _showSnackBar('Invalid or expired workout code');
       } else {
-        GoRouter.of(context).go('/collaborativeWorkoutDetails', extra: {
+        GoRouter.of(context).go('/competitiveWorkoutDetails', extra: {
           'code': code,
           'workoutData': workoutData,
-          'isCompetitive': false,
+          'isCompetitive': true,
         });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error validating code: $e')),
-        );
-      }
+      _showSnackBar('Error validating code: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -67,15 +57,22 @@ class _JoinCompetitiveWorkoutCodePageState
     }
   }
 
+  /// Toggles between scanning mode and manual entry
   void _toggleScanMode() {
     setState(() {
       _isScanning = !_isScanning;
     });
   }
 
+  /// Shows a snackbar message
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   void dispose() {
     _scannerController.dispose();
+    _codeController.dispose();
     super.dispose();
   }
 
@@ -84,8 +81,10 @@ class _JoinCompetitiveWorkoutCodePageState
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-            icon: Icon(Icons.arrow_back), onPressed: () => context.pop()),
-        title: Text('Competitive Workout'),
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+        title: Text('Join Competitive Workout'),
         centerTitle: true,
       ),
       body: Padding(
@@ -112,6 +111,7 @@ class _JoinCompetitiveWorkoutCodePageState
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 24, letterSpacing: 10),
             ),
+
             if (_isScanning)
               Expanded(
                 child: ClipRRect(
@@ -123,19 +123,19 @@ class _JoinCompetitiveWorkoutCodePageState
                       if (barcodes.isNotEmpty && mounted) {
                         final String code = barcodes.first.rawValue ?? '';
                         if (code.length == 6) {
-                          _processCode(code);
                           _codeController.text = code;
+                          _processCode(code);
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Invalid QR code format. Expected a 6-digit code.')),
-                          );
+                          _showSnackBar('Invalid QR code format. Expected a 6-digit code.');
                         }
                       }
                     },
                   ),
                 ),
               ),
+
             SizedBox(height: 30),
+
             ElevatedButton(
               onPressed: _validateAndProceed,
               child: Text('Join Workout'),
@@ -146,6 +146,7 @@ class _JoinCompetitiveWorkoutCodePageState
           ],
         ),
       ),
+
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Container(

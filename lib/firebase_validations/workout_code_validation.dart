@@ -7,10 +7,10 @@ class WorkoutCodeService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Generate a random 6-digit code
+
   String _generateRandomCode() {
     final random = Random();
-    final codeInt = random.nextInt(900000) + 100000; // 6-digit number
+    final codeInt = random.nextInt(900000) + 100000;
     return codeInt.toString();
   }
 

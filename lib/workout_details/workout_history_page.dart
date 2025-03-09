@@ -69,7 +69,7 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage>
           );
         }).toList();
 
-        // Fetch all participants' recorded results
+
         final List<ExerciseResult> userResults = [];
         final Map<String, int> userTotals = {};
 
@@ -326,17 +326,23 @@ class WorkoutHistoryTabContent extends StatelessWidget {
 
 
   Widget _buildWorkoutCard(BuildContext context, Workout workout) {
+    // Map exercise names to their achieved output
+    Map<String, int> resultMap = {
+      for (var result in workout.exerciseResults) result.name: result.achievedOutput
+    };
 
-    final completedExercises = workout.exerciseResults.where((result) {
-      final matchingExercise = workout.exercises.firstWhere(
-            (e) => e.name == result.name,
-        orElse: () => Exercise(name: '', targetOutput: 0, type: ''),
-      );
-      return result.achievedOutput >= matchingExercise.targetOutput;
-    }).length;
+    int completedExercises = 0;
+    int incompleteExercises = 0;
 
-    final incompleteExercises =
-        workout.exerciseResults.length - completedExercises;
+    for (var exercise in workout.exercises) {
+      int achievedOutput = resultMap[exercise.name] ?? 0;
+
+      if (achievedOutput >= exercise.targetOutput) {
+        completedExercises++;
+      } else {
+        incompleteExercises++;
+      }
+    }
 
     return Card(
       elevation: 3,
@@ -359,6 +365,7 @@ class WorkoutHistoryTabContent extends StatelessWidget {
               ),
             ),
             SizedBox(height: 4),
+
             // Date
             Text(
               DateFormat('MMM dd, yyyy h:mm a')
@@ -389,6 +396,7 @@ class WorkoutHistoryTabContent extends StatelessWidget {
       ),
     );
   }
+
 
   Widget _buildTrailingIcon(BuildContext context, Workout workout) {
     IconData iconData;

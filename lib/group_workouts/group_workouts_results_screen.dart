@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -200,8 +201,10 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
   }
 
 
+
+
   Widget _buildCompetitiveLeaderboard() {
-    // Sort by total points desc
+    // Sort users by total points (descending)
     final sorted = _userTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
@@ -224,7 +227,10 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
             final rank = entry.key;
             final userId = entry.value.key;
             final total = entry.value.value;
-            final userName = _userNames[userId] ?? "User-${userId.substring(0,5)}";
+
+            // Ensure user has a proper name, else generate a random one
+            final userName = _userNames[userId] ?? _generateRandomUsername();
+
             return ListTile(
               leading: _buildRankIcon(rank),
               title: Text(
@@ -243,6 +249,13 @@ class _GroupWorkoutResultsPageState extends State<GroupWorkoutResultsPage> {
       ),
     );
   }
+
+  String _generateRandomUsername() {
+    const _chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    final _rnd = Random();
+    return String.fromCharCodes(Iterable.generate(6, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+  }
+
 
   Widget _buildRankIcon(int rank) {
     if (rank == 0) {
